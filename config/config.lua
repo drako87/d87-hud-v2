@@ -5,7 +5,7 @@ Config = {}
 -- ============================================================================
 Config.Framework = 'auto'      -- Framework base (cuentas/trabajo): 'auto', 'qbox', 'qb-core', 'esx'
 Config.Locale = 'es'           -- 'es', 'en', 'fr', 'de'
-Config.GitHubRepo = 'https://github.com/drako87/d87-hud'
+Config.GitHubRepo = 'https://github.com/drako87/d87-hud-v2'
 
 -- ============================================================================
 -- 📊 HUD DE CONSTANTES VITALES
