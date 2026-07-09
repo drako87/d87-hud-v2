@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="ui.css">
+</head>
+<body>
+
+    <!-- ==================================================================
+         📊 HUD DE CONSTANTES VITALES
+    =================================================================== -->
+    <div id="d87-hud-wrapper" style="display: none;">
+
+        <div id="d87-finance">
+            <div id="d87-logo">
+                <img src="img/logo.png" alt="Logo">
+            </div>
+            <div class="fin-box cash-border" id="fin-cash">
+                <span class="fin-icon">💵</span>
+                <span id="val-cash">$0</span>
+            </div>
+            <div class="fin-box bank-border" id="fin-bank">
+                <span class="fin-icon">💳</span>
+                <span id="val-bank">$0</span>
+            </div>
+            <div class="fin-box job-border" id="fin-job">
+                <span class="fin-icon">💼</span>
+                <span id="val-job">...</span>
+            </div>
+        </div>
+
+        <div id="d87-compass-box">
+            <div class="compass-row">
+                <span id="val-time">00:00</span>
+                <span class="compass-divider">|</span>
+                <span id="val-compass">N</span>
+            </div>
+            <div id="val-street">...</div>
+            <div id="val-zone" style="display: none;"></div>
+        </div>
+
+        <div class="hud-box waypoint-bg" id="stat-waypoint" style="display: none;">
+            <span class="hud-icon">📍</span>
+            <span class="hud-value" id="val-waypoint">0M</span>
+        </div>
+
+        <div class="hud-box voice-bg" id="stat-voice">
+            <span class="hud-icon" id="icon-voice">🎙️</span>
+            <span class="hud-value" id="val-voice">0M</span>
+        </div>
+
+        <div id="d87-hud">
+            <div class="hud-box id-bg" id="stat-id">
+                <span class="hud-icon-text">ID</span>
+                <span class="hud-value" id="val-id">0</span>
+            </div>
+            <div class="hud-box oxygen-bg" id="stat-oxygen" style="display: none;">
+                <span class="hud-icon">🤿</span>
+                <span class="hud-value" id="val-oxygen">100</span>
+            </div>
+            <div class="hud-box health-bg" id="stat-health">
+                <span class="hud-icon">💔</span>
+                <span class="hud-value" id="val-health">0</span>
+            </div>
+            <div class="hud-box armor-bg" id="stat-armor">
+                <span class="hud-icon">🛡️</span>
+                <span class="hud-value" id="val-armor">0</span>
+            </div>
+            <div class="hud-box hunger-bg" id="stat-hunger">
+                <span class="hud-icon">🍔</span>
+                <span class="hud-value" id="val-hunger">0</span>
+            </div>
+            <div class="hud-box thirst-bg" id="stat-thirst">
+                <span class="hud-icon">🥤</span>
+                <span class="hud-value" id="val-thirst">0</span>
+            </div>
+            <div class="hud-box stress-bg" id="stat-stress">
+                <span class="hud-icon">🧠</span>
+                <span class="hud-value" id="val-stress">0</span>
+            </div>
+            <div class="hud-box stamina-bg" id="stat-stamina">
+                <span class="hud-icon">🫁</span>
+                <span class="hud-value" id="val-stamina">0</span>
+            </div>
+            <div class="hud-box sleep-bg" id="stat-sleep">
+                <span class="hud-icon">🛌</span>
+                <span class="hud-value" id="val-sleep">0</span>
+            </div>
+        </div>
+
+        <!-- 😴 OVERLAY DE SUEÑO FORZADO -->
+        <div id="d87-sleep-overlay" style="display: none;">
+            <div id="sleep-icon">🛌</div>
+            <div id="sleep-countdown">05:00</div>
+        </div>
+
+        <!-- 🧩 MENÚ DE AJUSTES EN VIVO (/hudmenu) -->
+        <div id="d87-menu-overlay" style="display: none;">
+            <div id="d87-menu">
+                <div class="menu-header">
+                    <span id="menu-title">D87 HUD — Ajustes</span>
+                    <button id="menu-close" type="button">✕</button>
+                </div>
+
+                <div class="menu-tabs">
+                    <button class="menu-tab active" data-tab="layout" id="tab-layout">Posición</button>
+                    <button class="menu-tab" data-tab="visibility" id="tab-visibility">Visibilidad</button>
+                    <button class="menu-tab" data-tab="alerts" id="tab-alerts">Alertas</button>
+                    <button class="menu-tab" data-tab="appearance" id="tab-appearance">Apariencia</button>
+                    <button class="menu-tab" data-tab="notify" id="tab-notify">Notificaciones</button>
+                    <button class="menu-tab" data-tab="weapons" id="tab-weapons">Armas</button>
+                </div>
+
+                <div class="menu-body">
+
+                    <!-- POSICIÓN Y TAMAÑO -->
+                    <div class="menu-panel active" data-panel="layout">
+                        <div class="menu-row">
+                            <label id="lbl-hud-scale">Escala del HUD</label>
+                            <input type="range" id="opt-size" min="0.7" max="1.5" step="0.01">
+                            <span class="menu-val" id="val-opt-size">1.05</span>
+                        </div>
+                        <div class="menu-row">
+                            <label id="lbl-fin-scale">Escala financiera</label>
+                            <input type="range" id="opt-topRightSize" min="0.7" max="1.5" step="0.01">
+                            <span class="menu-val" id="val-opt-topRightSize">1.00</span>
+                        </div>
+                        <div class="menu-divider" id="lbl-section-stats">Columna de estadísticas</div>
+                        <div class="menu-row">
+                            <label id="lbl-stats-bottom">Altura</label>
+                            <input type="range" id="opt-statsBottom" min="0" max="400" step="1">
+                            <span class="menu-val" id="val-opt-statsBottom">35</span>
+                        </div>
+                        <div class="menu-row">
+                            <label id="lbl-stats-left">Izquierda (%)</label>
+                            <input type="range" id="opt-statsLeft" min="0" max="50" step="0.1">
+                            <span class="menu-val" id="val-opt-statsLeft">16.5</span>
+                        </div>
+                        <div class="menu-divider" id="lbl-section-compass">Brújula</div>
+                        <div class="menu-row">
+                            <label id="lbl-compass-bottom">Altura</label>
+                            <input type="range" id="opt-compassBottom" min="0" max="500" step="1">
+                            <span class="menu-val" id="val-opt-compassBottom">220</span>
+                        </div>
+                        <div class="menu-row">
+                            <label id="lbl-compass-left">Izquierda (%)</label>
+                            <input type="range" id="opt-compassLeft" min="0" max="50" step="0.1">
+                            <span class="menu-val" id="val-opt-compassLeft">2.2</span>
+                        </div>
+                        <div class="menu-divider" id="lbl-section-finance">Panel financiero</div>
+                        <div class="menu-row">
+                            <label id="lbl-top-margin">Margen superior</label>
+                            <input type="range" id="opt-topMargin" min="0" max="300" step="1">
+                            <span class="menu-val" id="val-opt-topMargin">40</span>
+                        </div>
+                        <div class="menu-row">
+                            <label id="lbl-right-margin">Margen derecho</label>
+                            <input type="range" id="opt-rightMargin" min="0" max="300" step="1">
+                            <span class="menu-val" id="val-opt-rightMargin">40</span>
+                        </div>
+                    </div>
+
+                    <!-- VISIBILIDAD -->
+                    <div class="menu-panel" data-panel="visibility">
+                        <div class="menu-toggle-grid" id="visibility-grid"></div>
+                    </div>
+
+                    <!-- ALERTAS -->
+                    <div class="menu-panel" data-panel="alerts">
+                        <div class="menu-row">
+                            <label id="lbl-alert-percent">Umbral de alerta (%)</label>
+                            <input type="range" id="opt-alertLimit" min="5" max="50" step="1">
+                            <span class="menu-val" id="val-opt-alertLimit">20</span>
+                        </div>
+                        <div class="menu-row menu-row-toggle">
+                            <label id="lbl-alert-sound">Sonido de alerta</label>
+                            <input type="checkbox" id="opt-alertSound">
+                        </div>
+                        <div class="menu-row">
+                            <label id="lbl-alert-volume">Volumen</label>
+                            <input type="range" id="opt-alertSoundVolume" min="0" max="1" step="0.05">
+                            <span class="menu-val" id="val-opt-alertSoundVolume">0.4</span>
+                        </div>
+                    </div>
+
+                    <!-- APARIENCIA -->
+                    <div class="menu-panel" data-panel="appearance">
+                        <div class="menu-row">
+                            <label id="lbl-theme">Tema de color</label>
+                            <select id="opt-theme">
+                                <option value="purple">Morado</option>
+                                <option value="blue">Azul</option>
+                                <option value="red">Rojo</option>
+                            </select>
+                        </div>
+                        <div class="menu-row menu-row-toggle">
+                            <label id="lbl-compact">Modo compacto</label>
+                            <input type="checkbox" id="opt-compactMode">
+                        </div>
+                        <div class="menu-row menu-row-toggle">
+                            <label id="lbl-smart-fade">Ocultar necesidades al 95%+</label>
+                            <input type="checkbox" id="opt-smartFadeOut">
+                        </div>
+                        <div class="menu-row menu-row-toggle">
+                            <label id="lbl-show-zone">Mostrar nombre de zona</label>
+                            <input type="checkbox" id="opt-showZone">
+                        </div>
+                        <div class="menu-row">
+                            <label id="lbl-units">Unidades de distancia</label>
+                            <select id="opt-distanceUnit">
+                                <option value="metric">Métrico (m / km)</option>
+                                <option value="imperial">Imperial (ft / mi)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 🔔 NOTIFICACIONES -->
+                    <div class="menu-panel" data-panel="notify">
+                        <div class="menu-row">
+                            <label id="lbl-notify-position">Posición en pantalla</label>
+                            <select id="opt-notifyPosition">
+                                <option value="top-right">Arriba Derecha</option>
+                                <option value="top-left">Arriba Izquierda</option>
+                                <option value="bottom-right">Abajo Derecha</option>
+                                <option value="bottom-left">Abajo Izquierda</option>
+                                <option value="top-center">Arriba Centro</option>
+                            </select>
+                        </div>
+                        <div class="menu-row">
+                            <label id="lbl-notify-duration">Duración (ms)</label>
+                            <input type="range" id="opt-notifyDuration" min="1000" max="15000" step="500">
+                            <span class="menu-val" id="val-opt-notifyDuration">5000</span>
+                        </div>
+                        <div class="menu-row">
+                            <label id="lbl-notify-max">Máx. notificaciones</label>
+                            <input type="range" id="opt-notifyMax" min="1" max="10" step="1">
+                            <span class="menu-val" id="val-opt-notifyMax">5</span>
+                        </div>
+                    </div>
+
+                    <!-- ⚔️ ARMAS -->
+                    <div class="menu-panel" data-panel="weapons">
+                        <div class="menu-row">
+                            <label id="lbl-weapons-size">Escala del HUD</label>
+                            <input type="range" id="opt-weaponsSize" min="0.5" max="2" step="0.05">
+                            <span class="menu-val" id="val-opt-weaponsSize">1.00</span>
+                        </div>
+                        <div class="menu-row">
+                            <label id="lbl-weapons-bottom">Margen inferior</label>
+                            <input type="range" id="opt-weaponsBottomMargin" min="0" max="200" step="1">
+                            <span class="menu-val" id="val-opt-weaponsBottomMargin">40</span>
+                        </div>
+                        <div class="menu-row menu-row-toggle">
+                            <label id="lbl-weapons-hide-unarmed">Ocultar si no hay arma</label>
+                            <input type="checkbox" id="opt-weaponsHideWhenUnarmed">
+                        </div>
+                        <div class="menu-row">
+                            <label id="lbl-weapons-fade">Retardo de ocultado (ms)</label>
+                            <input type="range" id="opt-weaponsFadeTimeout" min="0" max="10000" step="100">
+                            <span class="menu-val" id="val-opt-weaponsFadeTimeout">3000</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="menu-footer">
+                    <button id="menu-reset" type="button">Restaurar por defecto</button>
+                    <button id="menu-save" type="button">Guardar y cerrar</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ==================================================================
+         🔔 NOTIFICACIONES
+    =================================================================== -->
+    <div id="d87-notify-container" class="top-center"></div>
+
+    <!-- ==================================================================
+         ⚔️ HUD DE ARMAS
+    =================================================================== -->
+    <div id="d87-crosshair" style="display: none;">
+        <div class="crosshair-dot"></div>
+    </div>
+
+    <div id="d87-weapon" style="display: none;">
+        <div class="weapon-info">
+            <span class="weapon-key-icon">⚔️</span>
+            <span id="weapon-name">CARGANDO...</span>
+        </div>
+
+        <div class="ammo-container">
+            <span id="ammo-clip">00</span>
+            <span class="ammo-divider">/</span>
+            <span id="ammo-reserve">000</span>
+        </div>
+
+        <div class="durability-container">
+            <div class="durability-bg">
+                <div id="durability-bar" class="durability-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="ui.js"></script>
+</body>
+</html>

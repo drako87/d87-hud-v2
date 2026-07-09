@@ -1,0 +1,94 @@
+Locales = Locales or {}
+
+Locales['es'] = {
+    -- Brújula y Ubicación
+    ['loading_street'] = "CARGANDO CALLE...",
+    ['unknown_street'] = "CALLE DESCONOCIDA",
+
+    -- Trabajo por defecto / Fallback
+    ['unemployed'] = "DESEMPLEADO",
+    ['unemployed_grade'] = "CIVIL",
+
+    -- Notificaciones de Consola / Sistema
+    ['init_success'] = "[D87 HUD] Inicializado por Drako87 con éxito.",
+    ['framework_detected'] = "[D87 HUD] Base de datos adaptada al framework: %s",
+
+    -- Direcciones Cardinales
+    ['north'] = "N",
+    ['south'] = "S",
+    ['east'] = "E",
+    ['west'] = "O",
+
+    -- Títulos por defecto de notificaciones
+    ['title_info'] = "INFORMACIÓN",
+    ['title_success'] = "ÉXITO",
+    ['title_warning'] = "ADVERTENCIA",
+    ['title_error'] = "ERROR",
+    ['title_police'] = "CENTRALITA LSPD",
+    ['title_medical'] = "ALERTA MÉDICA",
+
+    -- 🧩 Menú de ajustes en vivo (/hudmenu)
+    ['menu_title'] = "D87 HUD — Ajustes",
+    ['menu_tab_layout'] = "Posición",
+    ['menu_tab_visibility'] = "Visibilidad",
+    ['menu_tab_alerts'] = "Alertas",
+    ['menu_tab_appearance'] = "Apariencia",
+    ['menu_tab_notify'] = "Notificaciones",
+    ['menu_tab_weapons'] = "Armas",
+    ['menu_hud_scale'] = "Escala del HUD",
+    ['menu_fin_scale'] = "Escala financiera",
+    ['menu_section_stats'] = "Columna de estadísticas",
+    ['menu_stats_bottom'] = "Altura",
+    ['menu_stats_left'] = "Izquierda (%)",
+    ['menu_section_compass'] = "Brújula",
+    ['menu_compass_bottom'] = "Altura",
+    ['menu_compass_left'] = "Izquierda (%)",
+    ['menu_section_finance'] = "Panel financiero",
+    ['menu_top_margin'] = "Margen superior",
+    ['menu_right_margin'] = "Margen derecho",
+    ['menu_alert_percent'] = "Umbral de alerta (%)",
+    ['menu_alert_sound'] = "Sonido de alerta",
+    ['menu_alert_volume'] = "Volumen",
+    ['menu_theme'] = "Tema de color",
+    ['menu_theme_purple'] = "Morado",
+    ['menu_theme_blue'] = "Azul",
+    ['menu_theme_red'] = "Rojo",
+    ['menu_compact'] = "Modo compacto",
+    ['menu_smart_fade'] = "Ocultar necesidades al 95%+",
+    ['menu_show_zone'] = "Mostrar nombre de zona",
+    ['menu_units'] = "Unidades de distancia",
+    ['menu_unit_metric'] = "Métrico (m / km)",
+    ['menu_unit_imperial'] = "Imperial (ft / mi)",
+    ['menu_btn_reset'] = "Restaurar por defecto",
+    ['menu_btn_save'] = "Guardar y cerrar",
+    ['menu_vis_health'] = "Salud",
+    ['menu_vis_armor'] = "Armadura",
+    ['menu_vis_hunger'] = "Hambre",
+    ['menu_vis_thirst'] = "Sed",
+    ['menu_vis_stress'] = "Estrés",
+    ['menu_vis_stamina'] = "Resistencia",
+    ['menu_vis_sleep'] = "Sueño",
+    ['menu_vis_voice'] = "Micrófono",
+    ['menu_vis_oxygen'] = "Oxígeno",
+    ['menu_vis_compass'] = "Brújula",
+    ['menu_vis_time'] = "Hora",
+    ['menu_vis_cash'] = "Efectivo",
+    ['menu_vis_bank'] = "Banco",
+    ['menu_vis_job'] = "Trabajo",
+
+    -- 🔔 Notificaciones (panel del menú)
+    ['menu_notify_position'] = "Posición en pantalla",
+    ['menu_notify_duration'] = "Duración (ms)",
+    ['menu_notify_max'] = "Máx. notificaciones",
+    ['menu_pos_topright'] = "Arriba Derecha",
+    ['menu_pos_topleft'] = "Arriba Izquierda",
+    ['menu_pos_bottomright'] = "Abajo Derecha",
+    ['menu_pos_bottomleft'] = "Abajo Izquierda",
+    ['menu_pos_topcenter'] = "Arriba Centro",
+
+    -- ⚔️ Armas (panel del menú)
+    ['menu_weapons_size'] = "Escala del HUD",
+    ['menu_weapons_bottom'] = "Margen inferior",
+    ['menu_weapons_hide_unarmed'] = "Ocultar si no hay arma",
+    ['menu_weapons_fade'] = "Retardo de ocultado (ms)",
+}
