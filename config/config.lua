@@ -5,7 +5,7 @@ Config = {}
 -- ============================================================================
 Config.Framework = 'auto'      -- Framework base (cuentas/trabajo): 'auto', 'qbox', 'qb-core', 'esx'
 Config.Locale = 'es'           -- 'es', 'en', 'fr', 'de'
-Config.GitHubRepo = 'https://github.com/drako87/d87-hud-v2'
+Config.GitHubRepo = 'https://github.com/drako87/d87-hud'
 
 -- ============================================================================
 -- 📊 HUD DE CONSTANTES VITALES
@@ -48,6 +48,19 @@ Config.ShowVoice = true
 Config.ShowOxygen = true
 Config.ShowCompass = true
 Config.ShowTime = true
+Config.ShowFuel = true
+
+-- ============================================================================
+-- ⚡ RENDIMIENTO (resmon) — frecuencias de actualización de los hilos del HUD
+-- ============================================================================
+Config.HudFastInterval = 150     -- ms — hilo "crítico": salud, armadura, estrés, resistencia, sueño, oxígeno, voz, waypoint, combustible
+Config.HudCompassInterval = 300  -- ms — hilo "ligero": brújula y hora (>200ms recomendado para evitar parpadeos y ahorrar CPU)
+
+-- ⛽ SISTEMA DE COMBUSTIBLE — usado por la caja de combustible del HUD (solo visible dentro de un vehículo)
+Config.FuelSystem = 'native'     -- 'native' (GetVehicleFuelLevel nativo de FiveM, no requiere recursos externos)
+                                  -- 'LegacyFuel', 'ps-fuel', 'cdn-fuel' (usa el export GetFuel del recurso correspondiente)
+                                  -- 'none' (desactiva la lectura de combustible aunque Config.ShowFuel esté activo)
+
 
 Config.ShowCash = true
 Config.ShowBank = true
@@ -66,11 +79,11 @@ Config.SleepDuration = 5
 Config.StressEnabled = true
 Config.StressEffectThreshold = 80
 Config.StressShootCooldown = 500
-Config.StressSpeedThreshold = 250
+Config.StressSpeedThreshold = 140
 Config.StressGainSpeed = 1
 Config.StressSpeedInterval = 3000
-Config.StressAccidentSpeedDrop = 100
-Config.StressGainAccident = 10
+Config.StressAccidentSpeedDrop = 40
+Config.StressGainAccident = 15
 Config.StressAccidentCooldown = 4000
 Config.StressFromJobs = true
 Config.StressExemptJobs = {
