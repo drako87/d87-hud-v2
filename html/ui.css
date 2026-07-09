@@ -97,6 +97,7 @@ body {
 .id-bg       { border-left: 3px solid var(--accent-border) !important; }
 .voice-bg    { border-left: 3px solid #7c3aed !important; }
 .oxygen-bg   { border-left: 3px solid #ec4899 !important; }
+.fuel-bg     { border-left: 3px solid #fb923c !important; }
 .health-bg   { border-left: 3px solid #ef4444 !important; }
 .armor-bg    { border-left: 3px solid #3b82f6 !important; }
 .hunger-bg   { border-left: 3px solid #f59e0b !important; }
