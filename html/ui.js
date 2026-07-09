@@ -10,9 +10,11 @@ let lastOxVisible = null;
 let lastWpVisible = null;
 let lastVoiceTalking = null;
 let lastArmorVisible = null;
+let lastFuelVisible = null;
 
 let showArmorFeature = true;
 let showOxygenFeature = true;
+let showFuelFeature = true;
 let smartFadeEnabled = true;
 let autoHideArmorFeature = true;
 let showZoneFeature = true;
@@ -107,6 +109,7 @@ function applySettings(s) {
     showZoneFeature = !!s.showZone;
     showOxygenFeature = !!s.showOxygen;
     showArmorFeature = !!s.showArmor;
+    showFuelFeature = !!s.showFuel;
 
     wrapper.classList.remove('theme-blue', 'theme-red');
     if (s.theme === 'blue') wrapper.classList.add('theme-blue');
@@ -231,8 +234,7 @@ window.addEventListener('message', function(event) {
         hideSleepOverlay();
     }
 
-    else if (data.action === "hud_update") {
-        setTextIfChanged('val-id', 'id', data.playerId);
+    else if (data.action === "hud_update_compass") {
         setTextIfChanged('val-compass', 'compass', data.compass);
         setTextIfChanged('val-street', 'street', data.street);
         setTextIfChanged('val-time', 'time', data.time);
@@ -246,6 +248,10 @@ window.addEventListener('message', function(event) {
                 zoneEl.style.display = 'none';
             }
         }
+    }
+
+    else if (data.action === "hud_update") {
+        setTextIfChanged('val-id', 'id', data.playerId);
 
         let wpBox = document.getElementById('stat-waypoint');
         if (wpBox) {
@@ -280,6 +286,19 @@ window.addEventListener('message', function(event) {
         } else if (lastOxVisible !== false) {
             oxBox.style.display = 'none';
             lastOxVisible = false;
+        }
+
+        let fuelBox = document.getElementById('stat-fuel');
+        if (fuelBox) {
+            let shouldShowFuel = showFuelFeature && data.inVehicle && data.fuel !== null && data.fuel !== undefined;
+            if (lastFuelVisible !== shouldShowFuel) {
+                lastFuelVisible = shouldShowFuel;
+                fuelBox.style.display = shouldShowFuel ? 'flex' : 'none';
+            }
+            if (shouldShowFuel) {
+                setTextIfChanged('val-fuel', 'fuel', data.fuel);
+                toggleAlertBlink('stat-fuel', data.fuel <= 15);
+            }
         }
 
         setTextIfChanged('val-health', 'health', data.health);
@@ -338,6 +357,7 @@ const VISIBILITY_ITEMS = [
     { key: 'showOxygen', labelKey: 'visOxygen' },
     { key: 'showCompass', labelKey: 'visCompass' },
     { key: 'showTime', labelKey: 'visTime' },
+    { key: 'showFuel', labelKey: 'visFuel' },
     { key: 'showCash', labelKey: 'visCash' },
     { key: 'showBank', labelKey: 'visBank' },
     { key: 'showJob', labelKey: 'visJob' }
