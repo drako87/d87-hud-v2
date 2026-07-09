@@ -75,6 +75,7 @@ Locales['es'] = {
     ['menu_vis_cash'] = "Efectivo",
     ['menu_vis_bank'] = "Banco",
     ['menu_vis_job'] = "Trabajo",
+    ['menu_vis_fuel'] = "Combustible",
 
     -- 🔔 Notificaciones (panel del menú)
     ['menu_notify_position'] = "Posición en pantalla",
