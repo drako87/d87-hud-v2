@@ -71,6 +71,7 @@ local DEFAULT_SETTINGS = {
     showOxygen = Config.ShowOxygen,
     showCompass = Config.ShowCompass,
     showTime = Config.ShowTime,
+    showFuel = Config.ShowFuel,
     showCash = Config.ShowCash,
     showBank = Config.ShowBank,
     showJob = Config.ShowJob,
@@ -160,6 +161,7 @@ local function BuildMenuStrings()
         visOxygen = _L('menu_vis_oxygen'),
         visCompass = _L('menu_vis_compass'),
         visTime = _L('menu_vis_time'),
+        visFuel = _L('menu_vis_fuel'),
         visCash = _L('menu_vis_cash'),
         visBank = _L('menu_vis_bank'),
         visJob = _L('menu_vis_job'),
@@ -227,6 +229,7 @@ local function PushShowMessage()
         showJob = Settings.showJob,
         showCompass = Settings.showCompass,
         showTime = Settings.showTime,
+        showFuel = Settings.showFuel,
         showZone = Settings.showZone,
         alertLimit = Settings.alertLimit,
         alertSound = Settings.alertSound,
@@ -396,15 +399,57 @@ local function FormatWaypointDistance(distanceMeters)
     end
 end
 
--- Hilo principal de telemetría continuada (HUD de constantes)
+-- ============================================================================
+-- ⛽ COMBUSTIBLE — abstrae distintos sistemas para no acoplarse a un recurso concreto
+-- ============================================================================
+local function GetVehicleFuel(vehicle)
+    if Config.FuelSystem == 'none' or not Settings.showFuel then return nil end
+
+    if Config.FuelSystem == 'LegacyFuel' then
+        local ok, fuel = pcall(function() return exports['LegacyFuel']:GetFuel(vehicle) end)
+        return ok and fuel or nil
+    elseif Config.FuelSystem == 'ps-fuel' then
+        local ok, fuel = pcall(function() return exports['ps-fuel']:GetFuel(vehicle) end)
+        return ok and fuel or nil
+    elseif Config.FuelSystem == 'cdn-fuel' then
+        local ok, fuel = pcall(function() return exports['cdn-fuel']:GetFuel(vehicle) end)
+        return ok and fuel or nil
+    else -- 'native': usa el getter nativo de FiveM, sin dependencias externas
+        local ok, fuel = pcall(function() return GetVehicleFuelLevel(vehicle) end)
+        return ok and fuel or nil
+    end
+end
+
+-- ============================================================================
+-- ⚡ DELTA-CHECK — compara contra el último payload enviado y solo actualiza
+-- las claves que cambiaron en la caché; devuelve true si hay algo que enviar.
+-- Evita llamar a SendNUIMessage (y por tanto reflow/paint en el NUI) cuando
+-- nada ha cambiado realmente entre un tick y el siguiente.
+-- ============================================================================
+local function SyncAndCheckChanged(cache, newValues)
+    local changed = false
+    for k, v in pairs(newValues) do
+        if cache[k] ~= v then
+            cache[k] = v
+            changed = true
+        end
+    end
+    return changed
+end
+
+local lastFastPayload = {}
+local lastCompassPayload = {}
+
+-- 🚀 HILO RÁPIDO: salud, armadura, estrés, resistencia, sueño, oxígeno, voz, waypoint y combustible.
+-- Es el único que necesita reaccionar rápido (daño, disparos, etc.), por eso corre a Config.HudFastInterval.
 CreateThread(function()
     while true do
-        local sleep = 500
+        local sleep = 1000
         local ped = PlayerPedId()
         local isPauseOpen = IsPauseMenuActive() or IsRadarHidden() or hudDisabledGlobal
 
         if not isPauseOpen then
-            sleep = 150
+            sleep = Config.HudFastInterval or 150
             if not cachedPlayerServerId then cachedPlayerServerId = GetPlayerServerId(PlayerId()) end
             local playerServerId = cachedPlayerServerId
 
@@ -433,6 +478,118 @@ CreateThread(function()
             local health = (rawHealth > 100) and math.floor(rawHealth - 100) or math.floor(rawHealth)
             if health < 0 then health = 0 elseif health > 100 then health = 100 end
             local armor = math.floor(GetPedArmour(ped))
+
+            local now = GetGameTimer()
+
+            local vehicle = GetVehiclePedIsIn(ped, false)
+            local isDriver = vehicle ~= 0 and GetPedInVehicleSeat(vehicle, -1) == ped
+
+            if Config.ShowStamina and Config.StaminaControlEnabled then
+                if IsPedSprinting(ped) or IsPedRunning(ped) then currentStamina = currentStamina - (Config.StaminaDrainSprint * 0.1) else currentStamina = currentStamina + (Config.StaminaRegenRest * 0.1) end
+                if currentStamina < 0 then currentStamina = 0 elseif currentStamina > 100 then currentStamina = 100 end
+                SetPlayerStamina(PlayerId(), currentStamina)
+            end
+
+            -- 🔄 El estrés nativo (qbox/qb-core) solo existe en esos dos frameworks: en ESX no hay
+            -- equivalente, así que aunque Config.StressSource sea 'framework' se sigue usando la
+            -- mecánica interna del script para no dejar el estrés inutilizado.
+            local useInternalStress = (Config.StressSource == 'internal') or (CurrentFramework == 'esx')
+
+            if useInternalStress and Config.StressEnabled and Config.ShowStress and not IsStressExemptJob() and IsPedShooting(ped) and (now - lastStressGain) >= Config.StressShootCooldown then
+                currentStress = math.min(100, currentStress + Config.StressGainOnShoot)
+                if CurrentFramework == 'qbox' or CurrentFramework == 'qb-core' then TriggerServerEvent('hud:server:GainStress', Config.StressGainOnShoot) end
+                lastStressGain = now
+            end
+
+            if useInternalStress and Config.StressEnabled and Config.ShowStress and not IsStressExemptJob() then
+                if isDriver then
+                    local speedKmh = GetEntitySpeed(vehicle) * 3.6
+
+                    if speedKmh >= Config.StressSpeedThreshold and (now - lastSpeedStressGain) >= Config.StressSpeedInterval then
+                        currentStress = math.min(100, currentStress + Config.StressGainSpeed)
+                        lastSpeedStressGain = now
+                    end
+
+                    if (lastVehicleSpeed - speedKmh) >= Config.StressAccidentSpeedDrop and (now - lastAccidentStressGain) >= Config.StressAccidentCooldown then
+                        currentStress = math.min(100, currentStress + Config.StressGainAccident)
+                        lastAccidentStressGain = now
+                    end
+
+                    lastVehicleSpeed = speedKmh
+                else
+                    lastVehicleSpeed = 0
+                end
+            end
+
+            local isDiving, oxygenPct = false, 100
+            if Settings.showOxygen then
+                isDiving = IsPedSwimmingUnderWater(ped) or false
+                oxygenPct = math.floor(GetPlayerUnderwaterTimeRemaining(PlayerId()) * 10.0)
+                if oxygenPct > 100 then oxygenPct = 100 elseif oxygenPct < 0 then oxygenPct = 0 end
+            end
+
+            local voiceTalking, voiceProximity = false, 0
+            if Settings.showVoice then
+                voiceTalking = NetworkIsPlayerTalking(PlayerId()) or false
+                if GetResourceState('pma-voice') == 'started' then
+                    local proximityState = LocalPlayer.state.proximity
+                    if proximityState and proximityState.distance then
+                        voiceProximity = proximityState.distance
+                    end
+                end
+            end
+
+            local inVehicle = vehicle ~= 0
+            local fuelPct = nil
+            if inVehicle then
+                local fuel = GetVehicleFuel(vehicle)
+                if fuel then fuelPct = math.floor(fuel) end
+            end
+
+            local fastPayload = {
+                playerId = playerServerId,
+                health = health,
+                armor = armor,
+                hunger = math.floor(cachedHunger),
+                thirst = math.floor(cachedThirst),
+                stress = math.floor(currentStress),
+                stamina = math.floor(currentStamina),
+                sleep = math.floor(currentSleep),
+                diving = isDiving,
+                oxygen = oxygenPct,
+                talking = voiceTalking,
+                voiceDist = math.floor(voiceProximity),
+                wpActive = waypointActive,
+                wpDistance = waypointStr,
+                inVehicle = inVehicle,
+                fuel = fuelPct
+            }
+
+            if SyncAndCheckChanged(lastFastPayload, fastPayload) then
+                fastPayload.action = "hud_update"
+                SendNUIMessage(fastPayload)
+            end
+        else
+            if isHudVisible then
+                isHudVisible = false
+                SendNUIMessage({ action = "hud_hide" })
+            end
+            sleep = 1000
+        end
+        Wait(sleep)
+    end
+end)
+
+-- 🧭 HILO LIGERO: brújula, hora, calle y zona. No necesita reaccionar al instante,
+-- así que corre a Config.HudCompassInterval (>200ms) para no parpadear ni gastar CPU de más.
+CreateThread(function()
+    while true do
+        local sleep = 1000
+        local ped = PlayerPedId()
+        local isPauseOpen = IsPauseMenuActive() or IsRadarHidden() or hudDisabledGlobal
+
+        if not isPauseOpen and isHudVisible then
+            sleep = Config.HudCompassInterval or 300
 
             local now = GetGameTimer()
             local doSlowUpdate = (now - lastSlowUpdate) >= SLOW_INTERVAL
@@ -484,51 +641,6 @@ CreateThread(function()
                 lastSlowUpdate = now
             end
 
-            if Config.ShowStamina and Config.StaminaControlEnabled then
-                if IsPedSprinting(ped) or IsPedRunning(ped) then currentStamina = currentStamina - (Config.StaminaDrainSprint * 0.1) else currentStamina = currentStamina + (Config.StaminaRegenRest * 0.1) end
-                if currentStamina < 0 then currentStamina = 0 elseif currentStamina > 100 then currentStamina = 100 end
-                SetPlayerStamina(PlayerId(), currentStamina)
-            end
-
-            -- 🔄 El estrés nativo (qbox/qb-core) solo existe en esos dos frameworks: en ESX no hay
-            -- equivalente, así que aunque Config.StressSource sea 'framework' se sigue usando la
-            -- mecánica interna del script para no dejar el estrés inutilizado.
-            local useInternalStress = (Config.StressSource == 'internal') or (CurrentFramework == 'esx')
-
-            if useInternalStress and Config.StressEnabled and Config.ShowStress and not IsStressExemptJob() and IsPedShooting(ped) and (now - lastStressGain) >= Config.StressShootCooldown then
-                currentStress = math.min(100, currentStress + Config.StressGainOnShoot)
-                if CurrentFramework == 'qbox' or CurrentFramework == 'qb-core' then TriggerServerEvent('hud:server:GainStress', Config.StressGainOnShoot) end
-                lastStressGain = now
-            end
-
-            if useInternalStress and Config.StressEnabled and Config.ShowStress and not IsStressExemptJob() then
-                local vehicle = GetVehiclePedIsIn(ped, false)
-                if vehicle ~= 0 and GetPedInVehicleSeat(vehicle, -1) == ped then
-                    local speedKmh = GetEntitySpeed(vehicle) * 3.6
-
-                    if speedKmh >= Config.StressSpeedThreshold and (now - lastSpeedStressGain) >= Config.StressSpeedInterval then
-                        currentStress = math.min(100, currentStress + Config.StressGainSpeed)
-                        lastSpeedStressGain = now
-                    end
-
-                    if (lastVehicleSpeed - speedKmh) >= Config.StressAccidentSpeedDrop and (now - lastAccidentStressGain) >= Config.StressAccidentCooldown then
-                        currentStress = math.min(100, currentStress + Config.StressGainAccident)
-                        lastAccidentStressGain = now
-                    end
-
-                    lastVehicleSpeed = speedKmh
-                else
-                    lastVehicleSpeed = 0
-                end
-            end
-
-            local isDiving, oxygenPct = false, 100
-            if Settings.showOxygen then
-                isDiving = IsPedSwimmingUnderWater(ped) or false
-                oxygenPct = math.floor(GetPlayerUnderwaterTimeRemaining(PlayerId()) * 10.0)
-                if oxygenPct > 100 then oxygenPct = 100 elseif oxygenPct < 0 then oxygenPct = 0 end
-            end
-
             local cardinalDir = "N"
             if Settings.showCompass then
                 local heading = GetEntityHeading(ped)
@@ -541,43 +653,18 @@ CreateThread(function()
                 timeStr = string.format("%02d:%02d", GetClockHours(), GetClockMinutes())
             end
 
-            local voiceTalking, voiceProximity = false, 0
-            if Settings.showVoice then
-                voiceTalking = NetworkIsPlayerTalking(PlayerId()) or false
-                if GetResourceState('pma-voice') == 'started' then
-                    local proximityState = LocalPlayer.state.proximity
-                    if proximityState and proximityState.distance then
-                        voiceProximity = proximityState.distance
-                    end
-                end
-            end
-
-            SendNUIMessage({
-                action = "hud_update",
-                playerId = playerServerId,
-                health = health,
-                armor = armor,
-                hunger = math.floor(cachedHunger),
-                thirst = math.floor(cachedThirst),
-                stress = math.floor(currentStress),
-                stamina = math.floor(currentStamina),
-                sleep = math.floor(currentSleep),
-                diving = isDiving,
-                oxygen = oxygenPct,
+            local compassPayload = {
                 compass = cardinalDir,
                 street = cachedStreetName,
                 zone = cachedZoneName,
-                time = timeStr,
-                talking = voiceTalking,
-                voiceDist = math.floor(voiceProximity),
-                wpActive = waypointActive,
-                wpDistance = waypointStr
-            })
-        else
-            if isHudVisible then
-                isHudVisible = false
-                SendNUIMessage({ action = "hud_hide" })
+                time = timeStr
+            }
+
+            if SyncAndCheckChanged(lastCompassPayload, compassPayload) then
+                compassPayload.action = "hud_update_compass"
+                SendNUIMessage(compassPayload)
             end
+        else
             sleep = 1000
         end
         Wait(sleep)
