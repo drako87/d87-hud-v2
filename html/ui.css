@@ -635,3 +635,250 @@ body {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.3; }
 }
+
+/* ============================================================================
+   🏎️ VELOCÍMETRO / INSTRUMENTACIÓN VEHICULAR
+============================================================================ */
+#d87-speedo {
+    position: absolute;
+    bottom: 40px;
+    right: 40px;
+    width: 235px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: transparent;
+}
+
+.top-layout {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.left-panel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#speed {
+    font-size: 3.4rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: -2px;
+    line-height: 1;
+    min-width: 95px;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8), -1px -1px 0px rgba(0, 0, 0, 0.6);
+}
+
+.speed-active {
+    color: #ffffff !important;
+    text-shadow: 0px 0px 8px rgba(255, 255, 255, 0.3), 2px 2px 4px rgba(0,0,0,0.8) !important;
+}
+
+.gear-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+}
+
+.gear-box {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+    border-radius: 4px;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+#gear {
+    font-size: 0.9rem;
+    font-weight: 900;
+    color: #ffffff;
+    text-align: center;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.unit {
+    font-size: 0.5rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.7);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.center-status-icons {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    border-left: 1px solid rgba(255, 255, 255, 0.15);
+    border-right: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 0 12px;
+    height: 48px;
+    background: transparent !important;
+    border-radius: 0;
+    margin: 0 4px;
+}
+
+.icons-mini-row {
+    display: flex;
+    gap: 8px;
+}
+
+.mid-icon {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.25);
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
+    transition: color 0.2s ease;
+}
+
+.bars-panel-right {
+    display: flex;
+    gap: 12px;
+    background: rgba(18, 18, 18, 0.92) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 6px 10px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+}
+
+.status-vertical {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+}
+
+.status-label {
+    font-size: 0.55rem;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+}
+
+.status-bars-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.f-bar, .eng-bar {
+    width: 11px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 1px;
+}
+
+.f-bar-active { background: #facc15 !important; box-shadow: 0 0 4px rgba(250, 204, 21, 0.4); }
+.eng-bar-active-green { background: #4ade80 !important; box-shadow: 0 0 4px rgba(74, 222, 128, 0.4); }
+.eng-bar-active-yellow { background: #facc15 !important; }
+.eng-bar-active-red { background: #ef4444 !important; }
+
+.bottom-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.rpm-heavy-bar {
+    display: flex;
+    gap: 2px;
+    width: 100%;
+    height: 7px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 3px;
+    overflow: hidden;
+    padding: 1px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rpm-block {
+    flex: 1;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 1px;
+    transition: background-color 0.03s ease;
+}
+
+.rpm-low {
+    background: #22c55e !important;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+}
+
+.rpm-medium {
+    background: #f97316 !important;
+    box-shadow: 0 0 8px rgba(249, 115, 22, 0.9);
+}
+
+.rpm-high {
+    background: #ef4444 !important;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 1);
+}
+
+#vehicle-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding-left: 2px;
+}
+
+.vehicle-key-icon {
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.6);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+#vehicle-name {
+    font-size: 0.58rem;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.65);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.text-on { color: #4ade80 !important; text-shadow: 0 0 4px rgba(74, 222, 128, 0.5); }
+.text-highbeams { color: #3b82f6 !important; text-shadow: 0 0 4px rgba(59, 130, 246, 0.5); }
+.text-cruise-active { color: #3b82f6 !important; text-shadow: 0 0 4px rgba(59, 130, 246, 0.5); }
+.text-off { color: #f87171 !important; text-shadow: 0 0 4px rgba(248, 113, 113, 0.5); }
+.text-off-neutral { color: rgba(255, 255, 255, 0.18) !important; }
+.text-radar-alert { color: #f87171 !important; font-weight: 900; text-shadow: 1px 1px 2px #000; }
+
+.blink-active {
+    animation: onxBlink 1s infinite steps(2, start);
+}
+@keyframes onxBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+#odo-container {
+    font-size: 0.55rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.5);
+    font-family: monospace;
+    letter-spacing: 0.5px;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.8);
+}
+
+#odo-value {
+    color: #facc15;
+}
+
+.odo-unit {
+    font-size: 0.45rem;
+    color: rgba(255, 255, 255, 0.35);
+    font-weight: 900;
+}

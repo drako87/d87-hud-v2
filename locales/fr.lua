@@ -35,6 +35,7 @@ Locales['fr'] = {
     ['menu_tab_appearance'] = "Apparence",
     ['menu_tab_notify'] = "Notifications",
     ['menu_tab_weapons'] = "Armes",
+    ['menu_tab_vehicle'] = "Véhicule",
     ['menu_hud_scale'] = "Échelle du HUD",
     ['menu_fin_scale'] = "Échelle financière",
     ['menu_section_stats'] = "Colonne de statistiques",
@@ -92,4 +93,18 @@ Locales['fr'] = {
     ['menu_weapons_bottom'] = "Marge inférieure",
     ['menu_weapons_hide_unarmed'] = "Masquer si désarmé",
     ['menu_weapons_fade'] = "Délai de masquage (ms)",
+
+    -- 🏎️ Vélocimètre (panneau du menu)
+    ['menu_speedo_size'] = "Échelle du vélocimètre",
+    ['menu_speedo_bottom'] = "Marge inférieure",
+    ['menu_speedo_right'] = "Marge droite",
+    ['menu_speedo_mph'] = "Utiliser MPH au lieu de KM/H",
+    ['menu_speedo_show_name'] = "Afficher le nom du véhicule",
+    ['menu_speedo_show_rpm'] = "Afficher la barre de RPM",
+    ['menu_speedo_show_fuel'] = "Afficher la barre de carburant",
+    ['menu_speedo_show_engine'] = "Afficher la barre moteur",
+    ['menu_speedo_show_gear'] = "Afficher le bloc de vitesses",
+    ['menu_speedo_fuel_alert'] = "Réserve de carburant (%)",
+    ['menu_speedo_engine_alert'] = "Alerte moteur (%)",
+    ['menu_speedo_radars'] = "Activer les radars fixes",
 }

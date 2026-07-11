@@ -368,7 +368,15 @@ const SLIDER_FIELDS = [
     'compassBottom', 'compassLeft', 'topMargin', 'rightMargin',
     'alertLimit', 'alertSoundVolume',
     'notifyDuration', 'notifyMax',
-    'weaponsSize', 'weaponsBottomMargin', 'weaponsFadeTimeout'
+    'weaponsSize', 'weaponsBottomMargin', 'weaponsFadeTimeout',
+    'speedoSize', 'speedoBottomMargin', 'speedoRightMargin',
+    'speedoFuelAlertPercent', 'speedoEngineAlertPercent'
+];
+
+const SPEEDO_TOGGLE_FIELDS = [
+    'speedoUseMPH', 'speedoShowVehicleName', 'speedoShowRpmBar',
+    'speedoShowFuelBar', 'speedoShowEngineBar', 'speedoShowGearBox',
+    'speedoEnableRadars'
 ];
 
 let menuInitialized = false;
@@ -379,7 +387,7 @@ function initMenuStaticText() {
     const map = {
         'menu-title': 'title', 'tab-layout': 'tabLayout', 'tab-visibility': 'tabVisibility',
         'tab-alerts': 'tabAlerts', 'tab-appearance': 'tabAppearance',
-        'tab-notify': 'tabNotify', 'tab-weapons': 'tabWeapons',
+        'tab-notify': 'tabNotify', 'tab-weapons': 'tabWeapons', 'tab-vehicle': 'tabVehicle',
         'lbl-hud-scale': 'hudScale', 'lbl-fin-scale': 'finScale',
         'lbl-section-stats': 'sectionStats', 'lbl-stats-bottom': 'statsBottom', 'lbl-stats-left': 'statsLeft',
         'lbl-section-compass': 'sectionCompass', 'lbl-compass-bottom': 'compassBottom', 'lbl-compass-left': 'compassLeft',
@@ -390,6 +398,10 @@ function initMenuStaticText() {
         'lbl-notify-position': 'notifyPositionLbl', 'lbl-notify-duration': 'notifyDurationLbl', 'lbl-notify-max': 'notifyMaxLbl',
         'lbl-weapons-size': 'weaponsSizeLbl', 'lbl-weapons-bottom': 'weaponsBottomLbl',
         'lbl-weapons-hide-unarmed': 'weaponsHideUnarmedLbl', 'lbl-weapons-fade': 'weaponsFadeLbl',
+        'lbl-speedo-size': 'speedoSizeLbl', 'lbl-speedo-bottom': 'speedoBottomLbl', 'lbl-speedo-right': 'speedoRightLbl',
+        'lbl-speedo-mph': 'speedoMphLbl', 'lbl-speedo-show-name': 'speedoShowNameLbl', 'lbl-speedo-show-rpm': 'speedoShowRpmLbl',
+        'lbl-speedo-show-fuel': 'speedoShowFuelLbl', 'lbl-speedo-show-engine': 'speedoShowEngineLbl', 'lbl-speedo-show-gear': 'speedoShowGearLbl',
+        'lbl-speedo-fuel-alert': 'speedoFuelAlertLbl', 'lbl-speedo-engine-alert': 'speedoEngineAlertLbl', 'lbl-speedo-radars': 'speedoRadarsLbl',
         'menu-reset': 'btnReset', 'menu-save': 'btnSave'
     };
     Object.keys(map).forEach(id => {
@@ -450,6 +462,7 @@ function initMenuStaticText() {
             const valEl = document.getElementById(`val-opt-${key}`);
             if (valEl) valEl.innerText = value;
             applySettings(workingSettings);
+            if (key.startsWith('speedo')) applySpeedoSettings(workingSettings);
         });
     });
 
@@ -482,12 +495,22 @@ function initMenuStaticText() {
         workingSettings.weaponsHideWhenUnarmed = weaponsHideInput.checked;
     });
 
+    SPEEDO_TOGGLE_FIELDS.forEach(key => {
+        const input = document.getElementById(`opt-${key}`);
+        if (!input) return;
+        input.addEventListener('change', () => {
+            workingSettings[key] = input.checked;
+            applySpeedoSettings(workingSettings);
+        });
+    });
+
     document.getElementById('menu-close').addEventListener('click', () => closeSettingsMenu(false));
     document.getElementById('menu-save').addEventListener('click', () => closeSettingsMenu(true));
     document.getElementById('menu-reset').addEventListener('click', () => {
         workingSettings = Object.assign({}, factoryDefaults);
         populateMenuInputs(workingSettings);
         applySettings(workingSettings);
+        applySpeedoSettings(workingSettings);
     });
 
     document.addEventListener('keydown', (e) => {
@@ -524,6 +547,11 @@ function populateMenuInputs(s) {
     if (notifyPosInput) notifyPosInput.value = s.notifyPosition || 'top-center';
     const weaponsHideInput = document.getElementById('opt-weaponsHideWhenUnarmed');
     if (weaponsHideInput) weaponsHideInput.checked = !!s.weaponsHideWhenUnarmed;
+
+    SPEEDO_TOGGLE_FIELDS.forEach(key => {
+        const input = document.getElementById(`opt-${key}`);
+        if (input) input.checked = !!s[key];
+    });
 }
 
 function openSettingsMenu(settings, open) {
@@ -547,6 +575,7 @@ function closeSettingsMenu(save) {
         currentSettings = Object.assign({}, workingSettings);
     } else {
         applySettings(snapshotSettings);
+        applySpeedoSettings(snapshotSettings);
         postNUI('closeMenu', {});
     }
     overlay.style.display = 'none';
@@ -747,3 +776,204 @@ function weaponsUpdateDurability(durability) {
         weaponsEls.durabilityBar.classList.add('blink-critical');
     }
 }
+
+/* ============================================================================
+   🏎️ VELOCÍMETRO / INSTRUMENTACIÓN VEHICULAR
+============================================================================ */
+let speedoFuelLimit = 20;
+let speedoEngineLimit = 30;
+let speedoStoredVehicleName = "Cargando...";
+
+// Aplica en vivo escala/márgenes/visibilidad/umbrales sin esperar a un nuevo "speedo_show"
+function applySpeedoSettings(s) {
+    if (!s) return;
+    const container = document.getElementById('d87-speedo');
+    if (!container) return;
+
+    if (s.speedoSize) container.style.transform = `scale(${s.speedoSize})`;
+    if (s.speedoBottomMargin !== undefined) container.style.bottom = `${s.speedoBottomMargin}px`;
+    if (s.speedoRightMargin !== undefined) container.style.right = `${s.speedoRightMargin}px`;
+
+    if (s.speedoFuelAlertPercent !== undefined) speedoFuelLimit = s.speedoFuelAlertPercent;
+    if (s.speedoEngineAlertPercent !== undefined) speedoEngineLimit = s.speedoEngineAlertPercent;
+
+    const vehicleContainer = document.getElementById('vehicle-container');
+    const rpmBar = document.querySelector('.rpm-heavy-bar');
+    const fuelBlock = document.getElementById('fuel-status-block');
+    const engineBlock = document.getElementById('engine-status-block');
+    const gearContainer = document.querySelector('.gear-container');
+
+    if (vehicleContainer) vehicleContainer.style.display = s.speedoShowVehicleName ? 'flex' : 'none';
+    if (rpmBar) rpmBar.style.display = s.speedoShowRpmBar ? 'flex' : 'none';
+    if (fuelBlock) fuelBlock.style.display = s.speedoShowFuelBar ? 'flex' : 'none';
+    if (engineBlock) engineBlock.style.display = s.speedoShowEngineBar ? 'flex' : 'none';
+    if (gearContainer) gearContainer.style.display = s.speedoShowGearBox ? 'flex' : 'none';
+}
+
+window.addEventListener('message', function (event) {
+    let data = event.data;
+
+    if (data.action === "speedo_show") {
+        let container = document.getElementById('d87-speedo');
+        container.style.display = 'flex';
+
+        if (data.size) container.style.transform = `scale(${data.size})`;
+        if (data.bottom) container.style.bottom = `${data.bottom}px`;
+        if (data.right) container.style.right = `${data.right}px`;
+
+        if (data.fuelLimit !== undefined) speedoFuelLimit = data.fuelLimit;
+        if (data.engineLimit !== undefined) speedoEngineLimit = data.engineLimit;
+
+        document.getElementById('vehicle-container').style.display = data.showName ? 'flex' : 'none';
+        document.querySelector('.rpm-heavy-bar').style.display = data.showRpm ? 'flex' : 'none';
+        document.getElementById('fuel-status-block').style.display = data.showFuel ? 'flex' : 'none';
+        document.getElementById('engine-status-block').style.display = data.showEngine ? 'flex' : 'none';
+        document.querySelector('.gear-container').style.display = data.showGear ? 'flex' : 'none';
+
+        if (data.vehicleName) {
+            speedoStoredVehicleName = data.vehicleName;
+            document.getElementById('vehicle-name').innerText = speedoStoredVehicleName;
+        }
+
+        let sbIcon = document.getElementById('icon-seatbelt');
+        sbIcon.style.display = data.hideSeatbelt ? 'none' : 'inline-block';
+    }
+
+    else if (data.action === "speedo_configure") {
+        applySpeedoSettings({
+            speedoSize: data.size,
+            speedoBottomMargin: data.bottom,
+            speedoRightMargin: data.right,
+            speedoShowVehicleName: data.showName,
+            speedoShowRpmBar: data.showRpm,
+            speedoShowFuelBar: data.showFuel,
+            speedoShowEngineBar: data.showEngine,
+            speedoShowGearBox: data.showGear,
+            speedoFuelAlertPercent: data.fuelLimit,
+            speedoEngineAlertPercent: data.engineLimit
+        });
+    }
+
+    else if (data.action === "speedo_hide") {
+        document.getElementById('d87-speedo').style.display = 'none';
+    }
+
+    else if (data.action === "speedo_seatbelt") {
+        let sbIcon = document.getElementById('icon-seatbelt');
+        if (data.status) {
+            sbIcon.innerText = "⧮";
+            sbIcon.className = "mid-icon text-on";
+        } else {
+            sbIcon.innerText = "⧯";
+            sbIcon.className = "mid-icon text-off blink-active";
+        }
+    }
+
+    else if (data.action === "speedo_cruise") {
+        let cruiseIcon = document.getElementById('icon-cruise');
+        cruiseIcon.className = data.status ? "mid-icon text-cruise-active" : "mid-icon text-off-neutral";
+    }
+
+    else if (data.action === "speedo_update") {
+        let speedEl = document.getElementById('speed');
+        speedEl.innerText = data.speed.toString().padStart(3, '0');
+        speedEl.classList.toggle('speed-active', data.speed > 0);
+
+        let sbIcon = document.getElementById('icon-seatbelt');
+        if (data.vehType === "plane" || data.vehType === "heli" || data.vehType === "boat" || data.vehType === "bike") {
+            document.querySelector('.gear-container').style.opacity = (data.vehType === "bike") ? '1' : '0';
+            sbIcon.style.display = 'none';
+        } else {
+            document.querySelector('.gear-container').style.opacity = '1';
+            sbIcon.style.display = 'inline-block';
+        }
+
+        if (data.odo !== undefined) {
+            document.getElementById('odo-value').innerText = data.odo.toString().padStart(6, '0');
+        }
+        if (data.unit) {
+            document.querySelector('.unit').innerText = data.unit;
+            document.querySelector('.odo-unit').innerText = data.unit.split('/')[0];
+        }
+
+        document.getElementById('gear').innerText = data.gear;
+
+        let adjustedRpm = data.rpm;
+        if (data.rpm > 0 && data.rpm <= 25) {
+            adjustedRpm = 10;
+        } else if (data.rpm === 0) {
+            adjustedRpm = 0;
+        }
+
+        for (let i = 1; i <= 20; i++) {
+            let block = document.getElementById('rpm-' + i);
+            if (block) {
+                if (adjustedRpm > 0 && adjustedRpm >= (i * 5)) {
+                    block.className = (i <= 10) ? "rpm-block rpm-low" : (i <= 16) ? "rpm-block rpm-medium" : "rpm-block rpm-high";
+                } else {
+                    block.className = "rpm-block";
+                }
+            }
+        }
+
+        let lockIcon = document.getElementById('icon-lock');
+        if (data.locked) {
+            lockIcon.innerText = "🔒";
+            lockIcon.className = "mid-icon text-off";
+        } else {
+            lockIcon.innerText = "🔓";
+            lockIcon.className = "mid-icon text-on blink-active";
+        }
+
+        let lIcon = document.getElementById('icon-lights');
+        if (data.lights === "high") {
+            lIcon.className = "mid-icon text-highbeams";
+        } else if (data.lights === "normal") {
+            lIcon.className = "mid-icon text-on";
+        } else {
+            lIcon.className = "mid-icon text-off-neutral";
+        }
+
+        let nameEl = document.getElementById('vehicle-name');
+        if (data.radar) {
+            nameEl.innerText = `RADAR: MAX ${data.radarSpeed}`;
+            nameEl.className = "text-radar-alert blink-active";
+        } else {
+            nameEl.innerText = speedoStoredVehicleName;
+            nameEl.className = "";
+        }
+
+        for (let i = 1; i <= 6; i++) {
+            let bar = document.getElementById('fb-' + i);
+            if (bar) {
+                bar.classList.toggle('f-bar-active', data.fuel >= (i * 16.6) - 5);
+            }
+        }
+
+        let fuelContainer = document.getElementById('fb-6')?.parentElement;
+        if (fuelContainer) {
+            fuelContainer.classList.toggle('blink-active', data.fuel <= speedoFuelLimit);
+        }
+
+        for (let i = 1; i <= 6; i++) {
+            let bar = document.getElementById('eb-' + i);
+            if (bar) {
+                bar.className = "eng-bar";
+                if (data.engine >= (i * 16.6) - 5) {
+                    if (data.engine > 60) {
+                        bar.classList.add('eng-bar-active-green');
+                    } else if (data.engine > 30) {
+                        bar.classList.add('eng-bar-active-yellow');
+                    } else {
+                        bar.classList.add('eng-bar-active-red');
+                    }
+                }
+            }
+        }
+
+        let engineContainer = document.getElementById('eb-6')?.parentElement;
+        if (engineContainer) {
+            engineContainer.classList.toggle('blink-active', data.engine <= speedoEngineLimit);
+        }
+    }
+});

@@ -35,6 +35,7 @@ Locales['en'] = {
     ['menu_tab_appearance'] = "Appearance",
     ['menu_tab_notify'] = "Notifications",
     ['menu_tab_weapons'] = "Weapons",
+    ['menu_tab_vehicle'] = "Vehicle",
     ['menu_hud_scale'] = "HUD scale",
     ['menu_fin_scale'] = "Finance scale",
     ['menu_section_stats'] = "Stats column",
@@ -92,4 +93,18 @@ Locales['en'] = {
     ['menu_weapons_bottom'] = "Bottom margin",
     ['menu_weapons_hide_unarmed'] = "Hide when unarmed",
     ['menu_weapons_fade'] = "Hide delay (ms)",
+
+    -- 🏎️ Speedometer (menu panel)
+    ['menu_speedo_size'] = "Speedometer scale",
+    ['menu_speedo_bottom'] = "Bottom margin",
+    ['menu_speedo_right'] = "Right margin",
+    ['menu_speedo_mph'] = "Use MPH instead of KM/H",
+    ['menu_speedo_show_name'] = "Show vehicle name",
+    ['menu_speedo_show_rpm'] = "Show RPM bar",
+    ['menu_speedo_show_fuel'] = "Show fuel bar",
+    ['menu_speedo_show_engine'] = "Show engine bar",
+    ['menu_speedo_show_gear'] = "Show gear box",
+    ['menu_speedo_fuel_alert'] = "Fuel reserve (%)",
+    ['menu_speedo_engine_alert'] = "Engine alert (%)",
+    ['menu_speedo_radars'] = "Enable fixed radars",
 }

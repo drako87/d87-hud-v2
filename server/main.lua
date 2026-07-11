@@ -1,4 +1,32 @@
 -- ============================================================================
+-- 🔎 COMPROBADOR DE VERSIONES (GitHub, vía ox_lib)
+-- ============================================================================
+CreateThread(function()
+    local retries = 0
+    while not lib and retries < 150 do
+        Wait(100)
+        retries = retries + 1
+    end
+
+    if lib and lib.versionCheck then
+        if Config.GitHubRepo and Config.GitHubRepo ~= 'https://github.com' then
+            local user, repo = Config.GitHubRepo:match("github%.com/([%w%-]+)/([%w%-]+)")
+            if user and repo then
+                lib.versionCheck({
+                    user = user,
+                    repo = repo,
+                    currentVersion = GetResourceMetadata(GetCurrentResourceName(), 'version', 0)
+                })
+            else
+                print('^1[D87 HUD] ERROR: El formato de la URL de GitHub en el config.lua es incorrecto u omitido.^7')
+            end
+        end
+    else
+        print('^3[D87 HUD] Alerta de inicio: ox_lib no se detectó a tiempo tras 15s. Comprobación de versión en GitHub omitida.^7')
+    end
+end)
+
+-- ============================================================================
 -- 🌐 DETECCIÓN DE FRAMEWORK BASE (cuentas / trabajo) — usado por el HUD
 -- ============================================================================
 local CurrentFramework = nil

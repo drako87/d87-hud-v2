@@ -35,6 +35,7 @@ Locales['de'] = {
     ['menu_tab_appearance'] = "Erscheinungsbild",
     ['menu_tab_notify'] = "Benachrichtigungen",
     ['menu_tab_weapons'] = "Waffen",
+    ['menu_tab_vehicle'] = "Fahrzeug",
     ['menu_hud_scale'] = "HUD-Skalierung",
     ['menu_fin_scale'] = "Finanz-Skalierung",
     ['menu_section_stats'] = "Statistikspalte",
@@ -92,4 +93,18 @@ Locales['de'] = {
     ['menu_weapons_bottom'] = "Unterer Rand",
     ['menu_weapons_hide_unarmed'] = "Ausblenden wenn unbewaffnet",
     ['menu_weapons_fade'] = "Ausblendverzögerung (ms)",
+
+    -- 🏎️ Tacho (Menüpanel)
+    ['menu_speedo_size'] = "Tacho-Skalierung",
+    ['menu_speedo_bottom'] = "Unterer Rand",
+    ['menu_speedo_right'] = "Rechter Rand",
+    ['menu_speedo_mph'] = "MPH statt KM/H verwenden",
+    ['menu_speedo_show_name'] = "Fahrzeugnamen anzeigen",
+    ['menu_speedo_show_rpm'] = "Drehzahlbalken anzeigen",
+    ['menu_speedo_show_fuel'] = "Kraftstoffbalken anzeigen",
+    ['menu_speedo_show_engine'] = "Motorbalken anzeigen",
+    ['menu_speedo_show_gear'] = "Gangbox anzeigen",
+    ['menu_speedo_fuel_alert'] = "Kraftstoffreserve (%)",
+    ['menu_speedo_engine_alert'] = "Motorwarnung (%)",
+    ['menu_speedo_radars'] = "Feste Radare aktivieren",
 }

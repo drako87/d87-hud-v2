@@ -113,6 +113,7 @@
                     <button class="menu-tab" data-tab="appearance" id="tab-appearance">Apariencia</button>
                     <button class="menu-tab" data-tab="notify" id="tab-notify">Notificaciones</button>
                     <button class="menu-tab" data-tab="weapons" id="tab-weapons">Armas</button>
+                    <button class="menu-tab" data-tab="vehicle" id="tab-vehicle">Vehículo</button>
                 </div>
 
                 <div class="menu-body">
@@ -265,6 +266,63 @@
                         </div>
                     </div>
 
+                    <!-- 🏎️ VEHÍCULO (VELOCÍMETRO) -->
+                    <div class="menu-panel" data-panel="vehicle">
+                        <div class="menu-row">
+                            <label id="lbl-speedo-size">Escala del velocímetro</label>
+                            <input type="range" id="opt-speedoSize" min="0.5" max="1.5" step="0.05">
+                            <span class="menu-val" id="val-opt-speedoSize">1.00</span>
+                        </div>
+                        <div class="menu-row">
+                            <label id="lbl-speedo-bottom">Margen inferior</label>
+                            <input type="range" id="opt-speedoBottomMargin" min="0" max="200" step="1">
+                            <span class="menu-val" id="val-opt-speedoBottomMargin">40</span>
+                        </div>
+                        <div class="menu-row">
+                            <label id="lbl-speedo-right">Margen derecho</label>
+                            <input type="range" id="opt-speedoRightMargin" min="0" max="200" step="1">
+                            <span class="menu-val" id="val-opt-speedoRightMargin">40</span>
+                        </div>
+                        <div class="menu-row menu-row-toggle">
+                            <label id="lbl-speedo-mph">Usar MPH en vez de KM/H</label>
+                            <input type="checkbox" id="opt-speedoUseMPH">
+                        </div>
+                        <div class="menu-row menu-row-toggle">
+                            <label id="lbl-speedo-show-name">Mostrar nombre del vehículo</label>
+                            <input type="checkbox" id="opt-speedoShowVehicleName">
+                        </div>
+                        <div class="menu-row menu-row-toggle">
+                            <label id="lbl-speedo-show-rpm">Mostrar barra de RPM</label>
+                            <input type="checkbox" id="opt-speedoShowRpmBar">
+                        </div>
+                        <div class="menu-row menu-row-toggle">
+                            <label id="lbl-speedo-show-fuel">Mostrar barra de combustible</label>
+                            <input type="checkbox" id="opt-speedoShowFuelBar">
+                        </div>
+                        <div class="menu-row menu-row-toggle">
+                            <label id="lbl-speedo-show-engine">Mostrar barra de motor</label>
+                            <input type="checkbox" id="opt-speedoShowEngineBar">
+                        </div>
+                        <div class="menu-row menu-row-toggle">
+                            <label id="lbl-speedo-show-gear">Mostrar recuadro de marchas</label>
+                            <input type="checkbox" id="opt-speedoShowGearBox">
+                        </div>
+                        <div class="menu-row">
+                            <label id="lbl-speedo-fuel-alert">Reserva de combustible (%)</label>
+                            <input type="range" id="opt-speedoFuelAlertPercent" min="5" max="50" step="1">
+                            <span class="menu-val" id="val-opt-speedoFuelAlertPercent">20</span>
+                        </div>
+                        <div class="menu-row">
+                            <label id="lbl-speedo-engine-alert">Alerta de motor (%)</label>
+                            <input type="range" id="opt-speedoEngineAlertPercent" min="5" max="50" step="1">
+                            <span class="menu-val" id="val-opt-speedoEngineAlertPercent">30</span>
+                        </div>
+                        <div class="menu-row menu-row-toggle">
+                            <label id="lbl-speedo-radars">Activar radares fijos</label>
+                            <input type="checkbox" id="opt-speedoEnableRadars">
+                        </div>
+                    </div>
+
                 </div>
 
                 <div class="menu-footer">
@@ -305,6 +363,88 @@
                 <div id="durability-bar" class="durability-fill"></div>
             </div>
         </div>
+    </div>
+
+    <!-- ==================================================================
+         🏎️ VELOCÍMETRO / INSTRUMENTACIÓN VEHICULAR
+    =================================================================== -->
+    <div id="d87-speedo" style="display: none;">
+
+        <div class="top-layout">
+
+            <div class="left-panel">
+                <div id="speed">000</div>
+                <div class="gear-container">
+                    <div class="gear-box"><span id="gear">N</span></div>
+                    <div class="unit">KM/H</div>
+                </div>
+            </div>
+
+            <div class="center-status-icons">
+                <div class="icons-mini-row">
+                    <span id="icon-lock" class="mid-icon">🔓</span>
+                    <span id="icon-seatbelt" class="mid-icon text-off blink-active">✕</span>
+                </div>
+                <div class="icons-mini-row">
+                    <span id="icon-lights" class="mid-icon">💡</span>
+                    <span id="icon-cruise" class="mid-icon">⏱️</span>
+                </div>
+            </div>
+
+            <div class="bars-panel-right">
+                <div class="status-vertical" id="engine-status-block">
+                    <span class="status-label">H</span>
+                    <div class="status-bars-container">
+                        <div class="eng-bar" id="eb-6"></div>
+                        <div class="eng-bar" id="eb-5"></div>
+                        <div class="eng-bar" id="eb-4"></div>
+                        <div class="eng-bar" id="eb-3"></div>
+                        <div class="eng-bar" id="eb-2"></div>
+                        <div class="eng-bar" id="eb-1"></div>
+                    </div>
+                    <span class="status-label">🔧</span>
+                </div>
+                <div class="status-vertical" id="fuel-status-block">
+                    <span class="status-label">F</span>
+                    <div class="status-bars-container">
+                        <div class="f-bar" id="fb-6"></div>
+                        <div class="f-bar" id="fb-5"></div>
+                        <div class="f-bar" id="fb-4"></div>
+                        <div class="f-bar" id="fb-3"></div>
+                        <div class="f-bar" id="fb-2"></div>
+                        <div class="f-bar" id="fb-1"></div>
+                    </div>
+                    <span class="status-label">E</span>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="bottom-layout">
+            <div class="rpm-heavy-bar">
+                <div class="rpm-block" id="rpm-1"></div><div class="rpm-block" id="rpm-2"></div>
+                <div class="rpm-block" id="rpm-3"></div><div class="rpm-block" id="rpm-4"></div>
+                <div class="rpm-block" id="rpm-5"></div><div class="rpm-block" id="rpm-6"></div>
+                <div class="rpm-block" id="rpm-7"></div><div class="rpm-block" id="rpm-8"></div>
+                <div class="rpm-block" id="rpm-9"></div><div class="rpm-block" id="rpm-10"></div>
+                <div class="rpm-block" id="rpm-11"></div><div class="rpm-block" id="rpm-12"></div>
+                <div class="rpm-block" id="rpm-13"></div><div class="rpm-block" id="rpm-14"></div>
+                <div class="rpm-block" id="rpm-15"></div><div class="rpm-block" id="rpm-16"></div>
+                <div class="rpm-block" id="rpm-17"></div><div class="rpm-block" id="rpm-18"></div>
+                <div class="rpm-block" id="rpm-19"></div><div class="rpm-block" id="rpm-20"></div>
+            </div>
+
+            <div id="vehicle-container">
+                <div>
+                    <span class="vehicle-key-icon">🔑</span>
+                    <span id="vehicle-name">Cargando...</span>
+                </div>
+                <div id="odo-container">
+                    <span id="odo-value">000000</span> <span class="odo-unit">KM</span>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script src="ui.js"></script>

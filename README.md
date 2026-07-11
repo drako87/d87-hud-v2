@@ -1,17 +1,15 @@
-# 📊 D87 HUD v2
+# 📊 D87 HUD
 
-**D87 HUD v2** es el paquete unificado de interfaz para servidores de rol en FiveM. A partir de la v1.1.0, un único recurso reemplaza a los tres scripts independientes que existían antes (**D87 HUD**, **D87 Notifications** y **D87 Weapons HUD**), compartiendo detección de framework, sistema de ajustes en vivo y persistencia, todo bajo un solo `fxmanifest.lua`.
+**D87 HUD** es el paquete unificado de interfaz para servidores de rol en FiveM. Reúne en un solo recurso el **HUD de constantes vitales**, las **Notificaciones**, el **HUD de Armas** y el **Velocímetro/Instrumentación Vehicular**, compartiendo detección de framework, sistema de ajustes en vivo y persistencia, todo bajo un único `fxmanifest.lua`.
 
 ---
 
-## 🆕 Novedades de esta versión (fusión de los 3 scripts)
+## 🆕 Novedades de la v2.1.0 (fusión con D87 Speedometer)
 
-* **Un solo recurso `d87-hud v2`** en lugar de `d87-hud` + `d87-notifications` + `d87-weaponshud`. Menos recursos que iniciar, un único `config/config.lua` y una sola carpeta `locales/`.
-* **Menú de ajustes en vivo ampliado (`/hudmenu`):** ahora tiene 6 pestañas — Posición, Visibilidad, Alertas, Apariencia, **Notificaciones** y **Armas** — para configurar los tres módulos sin tocar código ni reiniciar el recurso. Los cambios se guardan por jugador (KVP local).
-* **Notificaciones integradas:** el HUD reemplaza automáticamente las notificaciones de `ox_lib`, `QBCore:Notify`, `esx:showNotification`/`showAdvancedNotification` y las nativas de FiveM (`feed:showNotification`), mostrándolas con el estilo premium de D87.
-* **HUD de armas integrado:** puntero táctico + contador de munición/durabilidad, compatible con `ox_inventory`, `qb-inventory` y `ESX Legacy`, con auto-detección independiente del framework base (ver sección de compatibilidad).
-* **Nuevo control de compatibilidad de estadísticas:** opción para elegir si el Estrés usa la mecánica propia del script o el `metadata.stress` nativo de qbox/qb-core, y opción para desactivar el control forzado de Resistencia (`SetPlayerStamina`) si otro recurso ya la gestiona. Salud, Armadura, Hambre y Sed siempre usan los valores nativos del framework detectado.
-* **Estructura de carpetas reorganizada:** `client/main.lua`, `server/main.lua`, `config/config.lua`, `locales/*.lua`, `html/`.
+* **Velocímetro vehicular integrado:** velocidad, marcha, RPM, barra de motor y combustible, cierre centralizado, luces, odómetro, control de crucero, eyección por choque sin cinturón y radares fijos — todo dentro del mismo recurso y del mismo `ui.js`.
+* **Nueva pestaña "Vehículo" en `/hudmenu`:** escala, márgenes, unidad de velocidad (KM/H o MPH), visibilidad de RPM/combustible/motor/marchas/nombre del vehículo, umbrales de alerta y activación de radares — todo ajustable en vivo, sin reiniciar el recurso.
+* **Config reorganizado:** los ajustes del velocímetro usan el prefijo `Config.Speedo*` para no chocar con los del HUD de constantes (p. ej. `Config.Size` del HUD vs `Config.SpeedoSize` del velocímetro).
+* **Un solo `client/main.lua`:** toda la telemetría comparte el mismo sistema de `Settings` y de persistencia (KVP), evitando duplicar hilos o detección de framework entre módulos.
 
 ---
 
@@ -20,11 +18,11 @@
 ```
 d87-hud/
 ├── client/
-│   └── main.lua        -- HUD de constantes + Notificaciones + HUD de armas (cliente)
+│   └── main.lua        -- HUD de constantes + Notificaciones + HUD de armas + Velocímetro (cliente)
 ├── server/
-│   └── main.lua        -- Cuentas/trabajo, retransmisión de notificaciones y munición de reserva
+│   └── main.lua         -- Cuentas/trabajo, retransmisión de notificaciones, munición de reserva y versionCheck
 ├── config/
-│   └── config.lua       -- Configuración única de los 3 módulos
+│   └── config.lua       -- Configuración única de los 4 módulos
 ├── locales/
 │   ├── es.lua / en.lua / fr.lua / de.lua
 ├── html/
@@ -50,7 +48,12 @@ d87-hud/
 ### ⚔️ HUD de armas
 * Puntero táctico dinámico, contador de cargador/reserva y barra de durabilidad.
 * Multi-inventario: auto-detecta **ox_inventory**, **qb-inventory** o **ESX Legacy** (independiente del framework base).
-* Requiere **ox_lib** (se usa para el callback de munición de reserva en qb/ESX).
+
+### 🏎️ Velocímetro / Instrumentación vehicular
+* Velocidad (KM/H o MPH), marcha, RPM secuencial, barra de motor y de combustible con alertas parpadeantes.
+* Cierre centralizado, estado de luces (cortas/largas), odómetro persistente por vehículo y adaptación automática a motos/barcos/aviones/helicópteros.
+* Control de crucero, eyección por choque a alta velocidad sin cinturón, multiplicador de daño de motor configurable y radares fijos con aviso sonoro.
+* Asistencia de desvolcado vía `ox_target` (si está instalado).
 
 ---
 
@@ -66,15 +69,22 @@ Config.StaminaControlEnabled = true -- false = el script deja de forzar SetPlaye
                                      -- conflictos con otro recurso que gestione el sprint)
 ```
 
-Si tu servidor ya gestiona el estrés o la resistencia con otro recurso, cambia estos valores para evitar conflictos o datos duplicados.
+El combustible tiene dos sistemas independientes y configurables por separado:
+
+```lua
+Config.HudFuelSystem   = 'native'  -- Alimenta la caja pequeña de combustible del HUD de constantes
+Config.SpeedoFuelSystem = 'auto'   -- Alimenta la barra de combustible del velocímetro ('auto' detecta ox_fuel, bazufix-fuel, legacyfuel, qb-fuel)
+```
+
+Si tu servidor ya gestiona el estrés, la resistencia o el combustible con otro recurso, ajusta estos valores para evitar conflictos o datos duplicados.
 
 ---
 
 ## 📥 Instalación
 
-1. Elimina/deja de iniciar tus antiguas carpetas `d87-hud`, `d87-notifications` y `d87-weaponshud` si las tenías por separado (ya no se usan).
+1. Elimina/deja de iniciar tus antiguas carpetas `d87-hud` (v1.x), `d87-notifications`, `d87-weaponshud` y `d87-speedometer` si las tenías por separado (ya no se usan).
 2. Copia la nueva carpeta a tu directorio de recursos, renombrada exactamente **`d87-hud`**.
-3. Asegúrate de tener **ox_lib** instalado (dependencia obligatoria del HUD de armas).
+3. Asegúrate de tener **ox_lib** instalado (dependencia obligatoria del HUD de armas y del comprobador de versiones).
 4. Copia tu `logo.png` a `html/img/logo.png` si usas uno personalizado (no se incluye por defecto).
 5. En tu `server.cfg`, inicia el recurso **debajo** de tu framework y de tu inventario:
    ```cfg
@@ -110,18 +120,24 @@ Config.WeaponsFramework = 'auto'   -- Framework de inventario: 'auto', 'ox', 'qb
 Config.WeaponsSize = 1.0
 Config.WeaponsHideWhenUnarmed = true
 
+-- Velocímetro vehicular
+Config.SpeedoSize = 1.0
+Config.SpeedoUseMPH = false
+Config.SpeedoEnableRadars = false
+Config.SpeedoVehicleDamageMultiplier = 0.3   -- 1.0 = daño normal | 0.3 = triple aguante | 0.2 = tanques
+
 -- Compatibilidad de estadísticas
 Config.StressSource = 'internal'
 Config.StaminaControlEnabled = true
 ```
 
-> La mayoría de estas opciones (posición, escalas, visibilidad, tema, notificaciones y armas) también se pueden ajustar en caliente desde el juego con **`/hudmenu`**, sin tocar `config.lua` ni reiniciar el recurso.
+> La mayoría de estas opciones (posición, escalas, visibilidad, tema, notificaciones, armas y velocímetro) también se pueden ajustar en caliente desde el juego con **`/hudmenu`**, sin tocar `config.lua` ni reiniciar el recurso.
 
 ---
 
 ## 🧩 Menú de ajustes en vivo (`/hudmenu`)
 
-6 pestañas disponibles:
+7 pestañas disponibles:
 
 | Pestaña | Contenido |
 |---|---|
@@ -131,8 +147,11 @@ Config.StaminaControlEnabled = true
 | **Apariencia** | Tema de color, modo compacto, Smart Fade Out, nombre de zona y unidades de distancia |
 | **Notificaciones** | Posición en pantalla, duración y máximo de notificaciones visibles |
 | **Armas** | Escala del HUD, margen inferior, ocultar si no hay arma y retardo de ocultado |
+| **Vehículo** | Escala y márgenes del velocímetro, unidad de velocidad (MPH/KM-H), visibilidad de RPM/combustible/motor/marchas/nombre, umbrales de alerta y activación de radares |
 
 Los cambios se previsualizan en vivo. **Guardar y cerrar** los aplica de forma permanente (KVP local, por jugador). **Restaurar por defecto** vuelve a los valores de `config.lua`.
+
+> Las teclas físicas (motor, cinturón, crucero) y la física del vehículo (multiplicador de daño, velocidad mínima de eyección, distancia y lista de radares) solo se configuran desde `config.lua`, ya que requieren reiniciar el recurso.
 
 ---
 
@@ -153,6 +172,18 @@ También puedes disparar notificaciones vía evento de red desde el servidor:
 TriggerEvent('d87-notifications:server:SendAlert', source, 'warning', 'Mensaje', 5000)  -- a un jugador
 TriggerEvent('d87-notifications:server:BroadcastAlert', 'police', 'Aviso a todo el servidor', 7000)  -- global
 ```
+
+---
+
+## ⌨️ Teclas por defecto (velocímetro)
+
+| Acción | Tecla | Config |
+|---|---|---|
+| Encender/apagar motor | `M` | `Config.SpeedoEngineKey` |
+| Poner/quitar cinturón | `B` | `Config.SpeedoSeatbeltKey` |
+| Activar/desactivar crucero | `Y` | `Config.SpeedoCruiseKey` |
+
+Reasignables desde Ajustes de FiveM → Teclas → Controles de este recurso.
 
 ---
 

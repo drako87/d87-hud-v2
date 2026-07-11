@@ -37,9 +37,10 @@ local Directions = { [0] = 'N', [1] = 'NE', [2] = 'E', [3] = 'SE', [4] = 'S', [5
 
 -- ============================================================================
 -- 🧩 SISTEMA DE AJUSTES EN VIVO (menú /hudmenu + persistencia KVP)
--- Incluye ajustes del HUD de constantes, de notificaciones y del HUD de armas.
--- Posiciones fijas de waypoint/voz y mecánicas (stamina/sueño/estrés/munición)
--- se siguen leyendo directamente de config.lua.
+-- Incluye ajustes del HUD de constantes, de notificaciones, del HUD de armas
+-- y del velocímetro vehicular. Posiciones fijas de waypoint/voz y mecánicas
+-- (stamina/sueño/estrés/munición/física del vehículo) se siguen leyendo
+-- directamente de config.lua.
 -- ============================================================================
 local DEFAULT_SETTINGS = {
     -- HUD de constantes
@@ -86,6 +87,20 @@ local DEFAULT_SETTINGS = {
     weaponsBottomMargin = Config.WeaponsBottomMargin,
     weaponsHideWhenUnarmed = Config.WeaponsHideWhenUnarmed,
     weaponsFadeTimeout = Config.WeaponsFadeTimeout,
+
+    -- Velocímetro vehicular
+    speedoSize = Config.SpeedoSize,
+    speedoBottomMargin = Config.SpeedoBottomMargin,
+    speedoRightMargin = Config.SpeedoRightMargin,
+    speedoShowVehicleName = Config.SpeedoShowVehicleName,
+    speedoShowRpmBar = Config.SpeedoShowRpmBar,
+    speedoShowFuelBar = Config.SpeedoShowFuelBar,
+    speedoShowEngineBar = Config.SpeedoShowEngineBar,
+    speedoShowGearBox = Config.SpeedoShowGearBox,
+    speedoUseMPH = Config.SpeedoUseMPH,
+    speedoFuelAlertPercent = Config.SpeedoFuelAlertPercent,
+    speedoEngineAlertPercent = Config.SpeedoEngineAlertPercent,
+    speedoEnableRadars = Config.SpeedoEnableRadars,
 }
 
 local Settings = {}
@@ -124,6 +139,7 @@ local function BuildMenuStrings()
         tabAppearance = _L('menu_tab_appearance'),
         tabNotify = _L('menu_tab_notify'),
         tabWeapons = _L('menu_tab_weapons'),
+        tabVehicle = _L('menu_tab_vehicle'),
         hudScale = _L('menu_hud_scale'),
         finScale = _L('menu_fin_scale'),
         sectionStats = _L('menu_section_stats'),
@@ -177,6 +193,18 @@ local function BuildMenuStrings()
         weaponsBottomLbl = _L('menu_weapons_bottom'),
         weaponsHideUnarmedLbl = _L('menu_weapons_hide_unarmed'),
         weaponsFadeLbl = _L('menu_weapons_fade'),
+        speedoSizeLbl = _L('menu_speedo_size'),
+        speedoBottomLbl = _L('menu_speedo_bottom'),
+        speedoRightLbl = _L('menu_speedo_right'),
+        speedoMphLbl = _L('menu_speedo_mph'),
+        speedoShowNameLbl = _L('menu_speedo_show_name'),
+        speedoShowRpmLbl = _L('menu_speedo_show_rpm'),
+        speedoShowFuelLbl = _L('menu_speedo_show_fuel'),
+        speedoShowEngineLbl = _L('menu_speedo_show_engine'),
+        speedoShowGearLbl = _L('menu_speedo_show_gear'),
+        speedoFuelAlertLbl = _L('menu_speedo_fuel_alert'),
+        speedoEngineAlertLbl = _L('menu_speedo_engine_alert'),
+        speedoRadarsLbl = _L('menu_speedo_radars'),
     }
 end
 
@@ -243,6 +271,24 @@ local function PushShowMessage()
     })
 end
 
+-- Reconfigura en vivo el velocímetro (escala, márgenes, elementos visibles y umbrales de alerta)
+-- sin necesidad de reiniciar el recurso ni de volver a entrar al vehículo.
+local function PushSpeedoConfigure()
+    SendNUIMessage({
+        action = "speedo_configure",
+        size = Settings.speedoSize,
+        bottom = Settings.speedoBottomMargin,
+        right = Settings.speedoRightMargin,
+        showName = Settings.speedoShowVehicleName,
+        showRpm = Settings.speedoShowRpmBar,
+        showFuel = Settings.speedoShowFuelBar,
+        showEngine = Settings.speedoShowEngineBar,
+        showGear = Settings.speedoShowGearBox,
+        fuelLimit = Settings.speedoFuelAlertPercent,
+        engineLimit = Settings.speedoEngineAlertPercent
+    })
+end
+
 -- COMANDO MULTIFUNCIÓN: Oculta la interfaz web y apaga/enciende el minimapa nativo de GTA V
 RegisterCommand('hud', function()
     hudDisabledGlobal = not hudDisabledGlobal
@@ -274,6 +320,7 @@ RegisterNUICallback('saveSettings', function(data, cb)
     isMenuOpen = false
     SetNuiFocus(false, false)
     PushShowMessage()
+    PushSpeedoConfigure()
     cb('ok')
 end)
 
@@ -400,18 +447,18 @@ local function FormatWaypointDistance(distanceMeters)
 end
 
 -- ============================================================================
--- ⛽ COMBUSTIBLE — abstrae distintos sistemas para no acoplarse a un recurso concreto
+-- ⛽ COMBUSTIBLE (caja pequeña de constantes) — abstrae distintos sistemas
 -- ============================================================================
-local function GetVehicleFuel(vehicle)
-    if Config.FuelSystem == 'none' or not Settings.showFuel then return nil end
+local function GetHudVehicleFuel(vehicle)
+    if Config.HudFuelSystem == 'none' or not Settings.showFuel then return nil end
 
-    if Config.FuelSystem == 'LegacyFuel' then
+    if Config.HudFuelSystem == 'LegacyFuel' then
         local ok, fuel = pcall(function() return exports['LegacyFuel']:GetFuel(vehicle) end)
         return ok and fuel or nil
-    elseif Config.FuelSystem == 'ps-fuel' then
+    elseif Config.HudFuelSystem == 'ps-fuel' then
         local ok, fuel = pcall(function() return exports['ps-fuel']:GetFuel(vehicle) end)
         return ok and fuel or nil
-    elseif Config.FuelSystem == 'cdn-fuel' then
+    elseif Config.HudFuelSystem == 'cdn-fuel' then
         local ok, fuel = pcall(function() return exports['cdn-fuel']:GetFuel(vehicle) end)
         return ok and fuel or nil
     else -- 'native': usa el getter nativo de FiveM, sin dependencias externas
@@ -542,7 +589,7 @@ CreateThread(function()
             local inVehicle = vehicle ~= 0
             local fuelPct = nil
             if inVehicle then
-                local fuel = GetVehicleFuel(vehicle)
+                local fuel = GetHudVehicleFuel(vehicle)
                 if fuel then fuelPct = math.floor(fuel) end
             end
 
@@ -972,5 +1019,417 @@ CreateThread(function()
             end
         end
         Wait(sleep)
+    end
+end)
+
+--[[
+============================================================================
+    🏎️ VELOCÍMETRO / INSTRUMENTACIÓN VEHICULAR (D87 Speedometer)
+    Telemetría, control de crucero, adaptación de tipo, odómetro, salud del
+    motor con multiplicador de daño y eyección por choque sin cinturón.
+    Un único hilo por vehículo: evita llamadas nativas duplicadas y
+    condiciones de carrera entre lectura de daño y pintado del HUD.
+============================================================================
+]]
+
+local speedoHudVisible = false
+local speedoEngineStatus = true
+local speedoCruiseStatus = false
+local speedoCruiseSpeed = 0.0
+local speedoSeatbeltStatus = false
+local speedoActiveRadar = false
+local speedoActiveRadarSpeed = 0
+
+local speedoLastVehicleCoords = nil
+local speedoLastEngineState = nil
+local speedoLastEngineHealth = nil
+local speedoLastVelocity = vec3(0, 0, 0)
+local speedoCurrentVelocity = vec3(0, 0, 0)
+
+-- ⛽ Combustible de la barra vertical del velocímetro — abstrae distintos sistemas
+local function GetSpeedoVehicleFuel(vehicle)
+    if not DoesEntityExist(vehicle) then return 100 end
+
+    local system = Config.SpeedoFuelSystem
+    if system == 'auto' then
+        if GetResourceState('ox_fuel') == 'started' then system = 'ox_fuel'
+        elseif GetResourceState('bazufix-fuel') == 'started' then system = 'bazufix-fuel'
+        elseif GetResourceState('legacyfuel') == 'started' then system = 'legacyfuel'
+        elseif GetResourceState('qb-fuel') == 'started' then system = 'qb-fuel'
+        else system = 'native' end
+    end
+
+    if system == 'ox_fuel' then
+        return math.floor(Entity(vehicle).state.fuel or 100)
+    elseif system == 'bazufix-fuel' then
+        local success, result = pcall(function() return exports['bazufix-fuel']:GetFuel(vehicle) end)
+        return (success and result) and math.floor(result) or math.floor(GetVehicleFuelLevel(vehicle))
+    elseif system == 'legacyfuel' then
+        local success, result = pcall(function() return exports['LegacyFuel']:GetFuel(vehicle) end)
+        return (success and result) and math.floor(result) or math.floor(GetVehicleFuelLevel(vehicle))
+    elseif system == 'qb-fuel' then
+        local success, result = pcall(function() return exports['qb-fuel']:GetFuel(vehicle) end)
+        return (success and result) and math.floor(result) or math.floor(GetVehicleFuelLevel(vehicle))
+    else
+        return math.floor(GetVehicleFuelLevel(vehicle) or 100)
+    end
+end
+
+-- 🛡️ SOLUCIÓN EXCLUSIVA PARA QBOX + QBX_GARAGES + BAZUFIX-FUEL
+-- Escuchamos el evento exacto en el que qbx_garages solicita las propiedades para meter el coche al garaje
+RegisterNetEvent('qbx_garages:client:storeVehicle', function(vehNetId)
+    if CurrentFramework ~= 'qbox' then return end
+
+    Wait(0)
+
+    if NetworkDoesNetworkIdExist(vehNetId) then
+        local vehicle = NetToVeh(vehNetId)
+        if DoesEntityExist(vehicle) then
+            local currentFuel = GetSpeedoVehicleFuel(vehicle)
+            SetVehicleFuelLevel(vehicle, currentFuel + 0.0)
+        end
+    end
+end)
+
+local function ResetSpeedoHudStates()
+    speedoHudVisible = false
+    speedoSeatbeltStatus = false
+    speedoCruiseStatus = false
+    speedoLastEngineState = nil
+    SendNUIMessage({ action = "speedo_hide" })
+end
+
+CreateThread(function()
+    while true do
+        local sleep = 500
+        local ped = PlayerPedId()
+
+        if IsPedInAnyVehicle(ped, false) and not IsPauseMenuActive() then
+            sleep = 100
+            local veh = GetVehiclePedIsIn(ped, false)
+
+            if GetPedInVehicleSeat(veh, -1) == ped then
+
+                -- 🔧 SALUD DEL MOTOR + MULTIPLICADOR DE DAÑO (leída una sola vez por frame)
+                local rawEngineHealth = GetVehicleEngineHealth(veh)
+                if speedoLastEngineHealth and rawEngineHealth < 1000.0 then
+                    local damageDone = speedoLastEngineHealth - rawEngineHealth
+                    if damageDone > 0 then
+                        local adjustedHealth = speedoLastEngineHealth - (damageDone * (Config.SpeedoVehicleDamageMultiplier or 1.0))
+                        SetVehicleEngineHealth(veh, adjustedHealth)
+                        rawEngineHealth = adjustedHealth
+                    end
+                end
+                speedoLastEngineHealth = rawEngineHealth
+
+                local enginePct = math.floor((rawEngineHealth / 1000) * 100)
+                if enginePct < 0 then enginePct = 0 elseif enginePct > 100 then enginePct = 100 end
+
+                -- 🛠️ Sincronización estricta de estados para evitar bucle de encendido/parpadeo
+                if enginePct > 15 then
+                    if speedoLastEngineState ~= speedoEngineStatus then
+                        SetVehicleEngineOn(veh, speedoEngineStatus, true, true)
+                        SetVehicleUndriveable(veh, not speedoEngineStatus)
+                        speedoLastEngineState = speedoEngineStatus
+                    end
+                else
+                    if speedoLastEngineState ~= false then
+                        SetVehicleUndriveable(veh, true)
+                        speedoLastEngineState = false
+                    end
+                end
+
+                -- ADAPTACIÓN DEL TIPO DE VEHÍCULO
+                local class = GetVehicleClass(veh)
+                local vehType = "car"
+                if class == 8 then vehType = "bike"
+                elseif class == 14 then vehType = "boat"
+                elseif class == 15 then vehType = "heli"
+                elseif class == 16 then vehType = "plane" end
+
+                -- CÁLCULO DEL CUENTAKILÓMETROS (ODÓMETRO)
+                local currentCoords = GetEntityCoords(veh)
+                if speedoLastVehicleCoords then
+                    local dist = #(currentCoords - speedoLastVehicleCoords)
+                    if dist > 0.0 and dist < 100.0 then
+                        local conversion = Settings.speedoUseMPH and 0.000621371 or 0.001
+                        local currentOdo = Entity(veh).state.odometer or 0.0
+                        Entity(veh).state:set('odometer', currentOdo + (dist * conversion), true)
+                    end
+                end
+                speedoLastVehicleCoords = currentCoords
+
+                local totalOdometer = math.floor(Entity(veh).state.odometer or 0.0)
+
+                -- Conversión de velocidades dinámicas
+                local speedMultiplier = Settings.speedoUseMPH and 2.236936 or 3.6
+                local speedUnit = Settings.speedoUseMPH and "MPH" or "KM/H"
+                local speedHUD = math.floor(GetEntitySpeed(veh) * speedMultiplier)
+
+                -- Control de Crucero Activo
+                if speedoCruiseStatus and vehType ~= "plane" and vehType ~= "heli" and vehType ~= "boat" then
+                    local currentSpeed = GetEntitySpeed(veh)
+                    if IsControlPressed(0, 72) or (currentSpeed < (speedoCruiseSpeed - 3.0)) then
+                        speedoCruiseStatus = false
+                        SendNUIMessage({ action = "speedo_cruise", status = false })
+                        lib.notify({title = 'Crucero', description = 'Control de crucero desactivado.', type = 'error'})
+                    else
+                        SetVehicleForwardSpeed(veh, speedoCruiseSpeed)
+                    end
+                end
+
+                -- 💥 EYECCIÓN POR CHOQUE SIN CINTURÓN
+                speedoCurrentVelocity = GetEntityVelocity(veh)
+                if speedHUD >= (Config.SpeedoMinSpeedEject or 60.0) then
+                    local lastSpeed = #speedoLastVelocity
+                    local curSpeed = #speedoCurrentVelocity
+                    local diff = lastSpeed - curSpeed
+
+                    if not speedoSeatbeltStatus and diff > (lastSpeed * 0.3) then
+                        local coords = GetEntityCoords(ped)
+                        local fwVector = GetEntityForwardVector(veh)
+
+                        SetEntityCoords(ped, coords.x + fwVector.x * 1.5, coords.y + fwVector.y * 1.5, coords.z + 0.5, true, true, true, false)
+                        SetEntityVelocity(ped, speedoLastVelocity.x * 1.2, speedoLastVelocity.y * 1.2, speedoLastVelocity.z * 1.2)
+
+                        Wait(100)
+                        SetPedToRagdoll(ped, 5000, 5000, 0, true, true, false)
+                        ApplyDamageToPed(ped, math.random(30, 65), false)
+
+                        speedoSeatbeltStatus = false
+                        SendNUIMessage({ action = "speedo_seatbelt", status = false })
+                    end
+                end
+                speedoLastVelocity = speedoCurrentVelocity
+
+                local rpm = 0
+                if GetIsVehicleEngineRunning(veh) and speedoEngineStatus and enginePct > 15 then
+                    rpm = math.floor(GetVehicleCurrentRpm(veh) * 100)
+                else
+                    rpm = 0
+                end
+
+                local gear = GetVehicleCurrentGear(veh)
+                local gearStr = tostring(gear)
+                if gear == 0 then gearStr = "R" end
+
+                local fuel = GetSpeedoVehicleFuel(veh)
+
+                local _, lightsOn, highBeamsOn = GetVehicleLightsState(veh)
+                local lightStatus = "off"
+                if highBeamsOn == 1 then lightStatus = "high" elseif lightsOn == 1 then lightStatus = "normal" end
+
+                local modelName = GetLabelText(GetDisplayNameFromVehicleModel(GetEntityModel(veh)))
+                if modelName == "NULL" then modelName = GetDisplayNameFromVehicleModel(GetEntityModel(veh)) end
+
+                local isLocked = GetVehicleDoorLockStatus(veh) == 2 or GetVehicleDoorsLockedForPlayer(veh, ped)
+
+                if not speedoHudVisible then
+                    speedoHudVisible = true
+                    SendNUIMessage({
+                        action = "speedo_show",
+                        size = Settings.speedoSize,
+                        bottom = Settings.speedoBottomMargin,
+                        right = Settings.speedoRightMargin,
+                        showName = Settings.speedoShowVehicleName,
+                        showRpm = Settings.speedoShowRpmBar,
+                        showFuel = Settings.speedoShowFuelBar,
+                        showEngine = Settings.speedoShowEngineBar,
+                        showGear = Settings.speedoShowGearBox,
+                        vehicleName = modelName,
+                        hideSeatbelt = false, -- Control reactivo en el ui.js
+                        fuelLimit = Settings.speedoFuelAlertPercent,
+                        engineLimit = Settings.speedoEngineAlertPercent
+                    })
+                    SendNUIMessage({ action = "speedo_seatbelt", status = speedoSeatbeltStatus })
+                    SendNUIMessage({ action = "speedo_cruise", status = speedoCruiseStatus })
+                end
+
+                SendNUIMessage({
+                    action = "speedo_update",
+                    speed = speedHUD,
+                    gear = gearStr,
+                    unit = speedUnit,
+                    rpm = rpm,
+                    fuel = fuel,
+                    engine = enginePct,
+                    locked = isLocked,
+                    lights = lightStatus,
+                    radar = speedoActiveRadar,
+                    radarSpeed = speedoActiveRadarSpeed,
+                    vehType = vehType,
+                    odo = totalOdometer
+                })
+            else
+                if speedoHudVisible then ResetSpeedoHudStates() end
+            end
+        else
+            if speedoHudVisible then ResetSpeedoHudStates() end
+            speedoEngineStatus = true
+            speedoLastVehicleCoords = nil
+            speedoLastEngineState = nil
+            speedoLastEngineHealth = nil
+            sleep = 1000
+        end
+        Wait(sleep)
+    end
+end)
+
+-- 📡 ESCÁNER ASÍNCRONO DE RADARES FIJOS
+CreateThread(function()
+    while true do
+        local sleep = 1500
+        local ped = PlayerPedId()
+
+        if Settings.speedoEnableRadars and IsPedInAnyVehicle(ped, false) then
+            local veh = GetVehiclePedIsIn(ped, false)
+            if GetPedInVehicleSeat(veh, -1) == ped then
+                sleep = 400
+                local coords = GetEntityCoords(veh)
+                local closeToRadar = false
+
+                for _, radar in ipairs(Config.SpeedoRadars) do
+                    local dist = #(coords - radar.coords)
+                    if dist <= (Config.SpeedoRadarDistance or 80.0) then
+                        closeToRadar = true
+                        speedoActiveRadarSpeed = radar.maxSpeed
+                        sleep = 150
+                        break
+                    end
+                end
+
+                if closeToRadar then
+                    if not speedoActiveRadar then
+                        speedoActiveRadar = true
+                        PlaySoundFrontend(-1, "Beep_Red", "DLC_HEIST_HACKING_SNAKE_SOUNDS", true)
+                    end
+                else
+                    speedoActiveRadar = false
+                end
+            else
+                speedoActiveRadar = false
+            end
+        else
+            speedoActiveRadar = false
+            sleep = 2000
+        end
+        Wait(sleep)
+    end
+end)
+
+-- MAPEO DE TECLAS (Motor, Cinturón y Crucero)
+RegisterKeyMapping('toggleengine', 'Alternar Motor del Vehículo', 'KEYBOARD', Config.SpeedoEngineKey or 'M')
+RegisterCommand('toggleengine', function()
+    local ped = PlayerPedId()
+    if IsPedInAnyVehicle(ped, false) then
+        local veh = GetVehiclePedIsIn(ped, false)
+        if GetPedInVehicleSeat(veh, -1) == ped then
+            if GetVehicleEngineHealth(veh) > 150 then
+                speedoEngineStatus = not speedoEngineStatus
+                if speedoEngineStatus then
+                    SetVehicleEngineOn(veh, true, false, true)
+                    SetVehicleUndriveable(veh, false)
+                    speedoLastEngineState = true
+                    lib.notify({title = 'Vehículo', description = 'Motor encendido.', type = 'success'})
+                else
+                    SetVehicleEngineOn(veh, false, false, true)
+                    SetVehicleUndriveable(veh, true)
+                    speedoCruiseStatus = false
+                    speedoLastEngineState = false
+                    SendNUIMessage({ action = "speedo_cruise", status = false })
+                    lib.notify({title = 'Vehículo', description = 'Motor apagado.', type = 'error'})
+                end
+            else
+                lib.notify({title = 'Vehículo', description = 'El motor está dañado.', type = 'error'})
+            end
+        end
+    end
+end, false)
+
+RegisterKeyMapping('toggleseatbelt', 'Poner/Quitar Cinturón de Seguridad', 'KEYBOARD', Config.SpeedoSeatbeltKey or 'B')
+RegisterCommand('toggleseatbelt', function()
+    local ped = PlayerPedId()
+    if IsPedInAnyVehicle(ped, false) then
+        local veh = GetVehiclePedIsIn(ped, false)
+        if GetPedInVehicleSeat(veh, -1) == ped then
+            speedoSeatbeltStatus = not speedoSeatbeltStatus
+            SendNUIMessage({ action = "speedo_seatbelt", status = speedoSeatbeltStatus })
+            PlaySoundFrontend(-1, "BUTTON_AND_CLICK", "HUD_AWARDS", true)
+            lib.notify({
+                title = 'Cinturón',
+                description = speedoSeatbeltStatus and 'Cinturón abrochado.' or 'Cinturón desabrochado.',
+                type = speedoSeatbeltStatus and 'success' or 'error'
+            })
+        end
+    end
+end, false)
+
+RegisterKeyMapping('togglecruise', 'Alternar Control de Crucero', 'KEYBOARD', Config.SpeedoCruiseKey or 'Y')
+RegisterCommand('togglecruise', function()
+    local ped = PlayerPedId()
+    if IsPedInAnyVehicle(ped, false) then
+        local veh = GetVehiclePedIsIn(ped, false)
+        if GetPedInVehicleSeat(veh, -1) == ped then
+            local speed = GetEntitySpeed(veh)
+            if speed * 3.6 >= 20.0 then
+                speedoCruiseStatus = not speedoCruiseStatus
+                if speedoCruiseStatus then
+                    speedoCruiseSpeed = speed
+                    SendNUIMessage({ action = "speedo_cruise", status = true })
+                    lib.notify({title = 'Crucero', description = 'Control de crucero establecido.', type = 'success'})
+                else
+                    SendNUIMessage({ action = "speedo_cruise", status = false })
+                    lib.notify({title = 'Crucero', description = 'Control de crucero quitado.', type = 'error'})
+                end
+            else
+                lib.notify({title = 'Crucero', description = 'Vas demasiado lento.', type = 'error'})
+            end
+        end
+    end
+end, false)
+
+-- INTEGRACIÓN CON OX_TARGET (DESVOLCAR)
+CreateThread(function()
+    Wait(1000)
+    if GetResourceState('ox_target') == 'started' then
+        exports.ox_target:addGlobalVehicle({
+            {
+                name = 'd87_hud:flip_vehicle',
+                icon = 'fa-solid fa-car-burst',
+                label = 'Desvolcar Vehículo',
+                distance = Config.SpeedoFlipDistance or 3.0,
+                canInteract = function(entity, distance, coords, name, bone)
+                    return not IsPedInAnyVehicle(PlayerPedId(), false) and IsEntityUpsidedown(entity)
+                end,
+                onSelect = function(data)
+                    local veh = data.entity
+                    if DoesEntityExist(veh) then
+                        local ped = PlayerPedId()
+                        TaskTurnPedToFaceEntity(ped, veh, 1000)
+                        Wait(500)
+                        TaskStartScenarioInPlace(ped, "WORLD_HUMAN_VEHICLE_MECHANIC", 0, true)
+
+                        if lib.progressBar({
+                            duration = Config.SpeedoFlipDuration or 4000,
+                            label = 'Desvolcando...',
+                            useVacuum = false,
+                            disable = { move = true, car = true, combat = true }
+                        }) then
+                            ClearPedTasksImmediately(ped)
+                            NetworkRequestControlOfEntity(veh)
+                            local timeout = 0
+                            while not NetworkHasControlOfEntity(veh) and timeout < 30 do Wait(10) timeout = timeout + 1 end
+                            local pos = GetEntityCoords(veh)
+                            SetEntityCoords(veh, pos.x, pos.y, pos.z + 0.5, true, false, false, true)
+                            SetVehicleOnGroundProperly(veh)
+                            lib.notify({title = 'Asistencia', description = 'Vehículo desvolcado con éxito.', type = 'success'})
+                        else
+                            ClearPedTasksImmediately(ped)
+                            lib.notify({title = 'Asistencia', description = 'Acción cancelada.', type = 'error'})
+                        end
+                    end
+                end
+            }
+        })
     end
 end)
